@@ -20,7 +20,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
-          sed -i "s/^version = \"0.0.0.dev\"/version = \"$VERSION\"/" pyproject.toml
+          sed -i "s/^version = \".*\\.dev\"/version = \"$VERSION\"/" pyproject.toml
           echo "Set version to $VERSION"
           grep '^version' pyproject.toml
 
