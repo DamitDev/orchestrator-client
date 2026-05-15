@@ -1,6 +1,6 @@
 # orchestrator-client
 
-Async and sync Python client for the [DAMIT AIOps Orchestrator](https://github.com/DamitDev/damit-aiops) REST API and Socket.IO realtime events.
+Async and sync Python client for the [DAMIT AIOps Orchestrator](https://github.com/DamitDev/orchestrator) REST API and Socket.IO realtime events.
 
 ## Install
 
