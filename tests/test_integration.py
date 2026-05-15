@@ -57,20 +57,36 @@ def config():
 
 
 @pytest.fixture(scope="module")
-def async_client():
-    """Shared async client — created once per module."""
-    client = OrchestratorAsync()
+def cfg():
+    return load_config()
+
+
+@pytest.fixture(scope="function")
+async def async_client(cfg):
+    """Per-test async client — isolates event loop per test."""
     if not orchestrator_reachable():
         pytest.skip("Orchestrator is not reachable")
+    client = OrchestratorAsync(
+        base_url=cfg.base_url,
+        api_key=cfg.api_key,
+        timeout=cfg.timeout,
+        max_retries=cfg.max_retries,
+    )
     yield client
+    await client.close()
 
 
 @pytest.fixture(scope="module")
-def sync_client():
+def sync_client(cfg):
     """Shared sync client — created once per module."""
-    client = Orchestrator()
     if not orchestrator_reachable():
         pytest.skip("Orchestrator is not reachable")
+    client = Orchestrator(
+        base_url=cfg.base_url,
+        api_key=cfg.api_key,
+        timeout=cfg.timeout,
+        max_retries=cfg.max_retries,
+    )
     yield client
 
 
