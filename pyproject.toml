@@ -26,6 +26,9 @@ dev = [
 [tool.setuptools.packages.find]
 include = ["orchestrator_client*"]
 
+[tool.setuptools.package-data]
+orchestrator_client = ["py.typed"]
+
 [tool.ruff]
 target-version = "py312"
 line-length = 100
