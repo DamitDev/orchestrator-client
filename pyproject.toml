@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=75.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orchestrator-client"
+version = "0.0.0.dev"
+description = "Async Python client for the DAMIT AIOps Orchestrator REST API and Socket.IO realtime events"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx>=0.28",
+    "python-socketio[asyncio_client]>=5.12",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.8",
+    "respx>=0.22",
+]
+
+[tool.setuptools.packages.find]
+include = ["orchestrator_client*"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
