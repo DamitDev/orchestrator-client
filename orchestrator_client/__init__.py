@@ -6,7 +6,8 @@ and configurable auth.
 
 Main components:
 
-* :class:`OrchestratorClient` — full REST API surface
+* :class:`Orchestrator` — synchronous REST client (primary interface)
+* :class:`OrchestratorAsync` — async REST client (for async contexts)
 * :class:`RealtimeClient` — Socket.IO event subscription layer
 * Typed exception hierarchy (:class:`OrchestratorError` and subclasses)
 * Typed response models (dataclasses for all response shapes)
@@ -19,7 +20,7 @@ try:
 except PackageNotFoundError:
     __version__ = "0.0.0.dev"
 
-from orchestrator_client.client import OrchestratorClient
+from orchestrator_client.client import OrchestratorAsync
 from orchestrator_client.config import OrchestratorConfig, load_config
 from orchestrator_client.exceptions import (
     OrchestratorAPIError,
@@ -84,10 +85,12 @@ from orchestrator_client.models import (
     WorkflowStates,
 )
 from orchestrator_client.socketio import RealtimeClient
+from orchestrator_client.sync_client import Orchestrator
 
 __all__ = [
     # Client classes
-    "OrchestratorClient",
+    "Orchestrator",
+    "OrchestratorAsync",
     "RealtimeClient",
     # Config
     "OrchestratorConfig",

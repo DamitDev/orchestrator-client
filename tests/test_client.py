@@ -3,7 +3,7 @@
 
 import pytest
 
-from orchestrator_client.client import OrchestratorClient
+from orchestrator_client.client import OrchestratorAsync
 from orchestrator_client.exceptions import (
     OrchestratorAPIError,
     OrchestratorAuthError,
@@ -16,7 +16,7 @@ class TestTaskMethods:
 
     @pytest.mark.asyncio
     async def test_list_tasks(self, mock_task_list_response):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return mock_task_list_response
@@ -30,7 +30,7 @@ class TestTaskMethods:
 
     @pytest.mark.asyncio
     async def test_list_tasks_with_filter(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
         captured = {}
 
         async def fake_request(method, path, **kwargs):
@@ -45,7 +45,7 @@ class TestTaskMethods:
 
     @pytest.mark.asyncio
     async def test_create_task(self, mock_task_create_response):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return mock_task_create_response
@@ -62,7 +62,7 @@ class TestTaskMethods:
 
     @pytest.mark.asyncio
     async def test_create_task_with_tools(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
         captured = {}
 
         async def fake_request(method, path, **kwargs):
@@ -85,7 +85,7 @@ class TestTaskMethods:
 
     @pytest.mark.asyncio
     async def test_get_task_status(self, mock_task_status_response):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return mock_task_status_response
@@ -98,7 +98,7 @@ class TestTaskMethods:
 
     @pytest.mark.asyncio
     async def test_get_task_conversation(self, mock_conversation_response):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return mock_conversation_response
@@ -114,7 +114,7 @@ class TestTaskMethods:
 
     @pytest.mark.asyncio
     async def test_cancel_task(self, mock_success_response):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return mock_success_response
@@ -125,7 +125,7 @@ class TestTaskMethods:
 
     @pytest.mark.asyncio
     async def test_delete_task(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return {"deleted_tasks": ["task-abc123"], "failed_tasks": [], "total_deleted": 1, "total_failed": 0}
@@ -136,7 +136,7 @@ class TestTaskMethods:
 
     @pytest.mark.asyncio
     async def test_delete_tasks(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
         captured = {}
 
         async def fake_request(method, path, **kwargs):
@@ -154,7 +154,7 @@ class TestWorkflowMethods:
 
     @pytest.mark.asyncio
     async def test_interactive_message(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
         captured = {}
 
         async def fake_request(method, path, **kwargs):
@@ -170,7 +170,7 @@ class TestWorkflowMethods:
 
     @pytest.mark.asyncio
     async def test_vsa_create(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
         captured = {}
 
         async def fake_request(method, path, **kwargs):
@@ -185,7 +185,7 @@ class TestWorkflowMethods:
 
     @pytest.mark.asyncio
     async def test_mio_interaction(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return {"message": "Mio woken, switching to interactive mode"}
@@ -196,7 +196,7 @@ class TestWorkflowMethods:
 
     @pytest.mark.asyncio
     async def test_matrix_conversation(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
         captured = {}
 
         async def fake_request(method, path, **kwargs):
@@ -213,7 +213,7 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     async def test_404_raises_not_found(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             raise OrchestratorNotFoundError("task", "task-xyz")
@@ -225,7 +225,7 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     async def test_400_raises_api_error(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             raise OrchestratorAPIError("Invalid state", status_code=400, error_code="INVALID_WORKFLOW_STATE")
@@ -238,7 +238,7 @@ class TestErrorHandling:
 
     @pytest.mark.asyncio
     async def test_401_raises_auth_error(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             raise OrchestratorAuthError("Unauthorized", status_code=401)
@@ -253,7 +253,7 @@ class TestConfigurationMethods:
 
     @pytest.mark.asyncio
     async def test_get_system_status(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return {
@@ -280,7 +280,7 @@ class TestConfigurationMethods:
 
     @pytest.mark.asyncio
     async def test_update_settings(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
         captured = {}
 
         async def fake_request(method, path, **kwargs):
@@ -302,7 +302,7 @@ class TestHealthMethods:
 
     @pytest.mark.asyncio
     async def test_health(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return {"status": "healthy", "message": "Orchestrator API is running", "version": "3.0.0"}
@@ -314,7 +314,7 @@ class TestHealthMethods:
 
     @pytest.mark.asyncio
     async def test_get_metrics(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return {"uptime_seconds": 3600.5, "active_tasks": 2, "open_tasks": 5}
@@ -330,7 +330,7 @@ class TestAuthAndWebSocket:
 
     @pytest.mark.asyncio
     async def test_get_auth_config(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return {"keycloak_enabled": True, "keycloak_url": "https://keycloak.test/auth/", "keycloak_realm": "test", "keycloak_client_id": "test-client"}
@@ -345,7 +345,7 @@ class TestErrorEvents:
 
     @pytest.mark.asyncio
     async def test_count_errors(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return {"count": 5}
@@ -356,7 +356,7 @@ class TestErrorEvents:
 
     @pytest.mark.asyncio
     async def test_get_error_detail(self):
-        client = OrchestratorClient(base_url="http://test:8080")
+        client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
             return {"id": "err-1", "severity": "critical", "source": "llm_backend", "message": "LLM failed", "traceback": "Traceback...", "context": {"model": "test"}}

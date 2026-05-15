@@ -1,4 +1,4 @@
-"""OrchestratorClient — async REST API wrapper for the DAMIT AIOps Orchestrator.
+"""OrchestratorAsync — async REST API wrapper for the DAMIT AIOps Orchestrator.
 
 Provides a complete mapping of the orchestrator's HTTP endpoints with
 automatic retry (exponential backoff), typed responses via dataclasses,
@@ -6,9 +6,9 @@ and configurable auth via bearer token.
 
 Usage::
 
-    from orchestrator_client import OrchestratorClient
+    from orchestrator_client import OrchestratorAsync
 
-    async with OrchestratorClient() as client:
+    async with OrchestratorAsync() as client:
         tasks = await client.list_tasks(workflow_id="proactive")
         for t in tasks.tasks:
             print(t.id, t.status)
@@ -107,7 +107,7 @@ def _build_task_summary(t: dict) -> TaskSummary:
     )
 
 
-class OrchestratorClient:
+class OrchestratorAsync:
     """Async HTTP client for the Orchestrator REST API.
 
     Args:
@@ -145,7 +145,7 @@ class OrchestratorClient:
         """Close the underlying HTTP session."""
         await self._http.aclose()
 
-    async def __aenter__(self) -> "OrchestratorClient":
+    async def __aenter__(self) -> "OrchestratorAsync":
         return self
 
     async def __aexit__(self, *args: Any) -> None:
