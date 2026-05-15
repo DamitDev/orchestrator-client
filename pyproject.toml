@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "orchestrator-client"
 version = "0.0.0.dev"
-description = "Async Python client for the DAMIT AIOps Orchestrator REST API and Socket.IO realtime events"
+description = "Python client for the DAMIT AIOps Orchestrator REST API and Socket.IO realtime events"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"
