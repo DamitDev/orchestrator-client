@@ -2,11 +2,31 @@
 
 All settings are read from environment variables with sensible defaults,
 so upstream applications can configure the client without passing args.
+
+If `python-dotenv` is installed and a ``.env`` file exists in the
+current working directory or its parents, it is loaded automatically.
 """
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
+try:
+    from dotenv import load_dotenv
+
+    # Walk up from CWD looking for .env
+    _env_path = Path.cwd() / ".env"
+    if not _env_path.exists():
+        # Also check parent directories
+        for parent in Path.cwd().parents:
+            candidate = parent / ".env"
+            if candidate.exists():
+                _env_path = candidate
+                break
+    if _env_path.exists():
+        load_dotenv(_env_path)
+except ImportError:
+    pass
 
 @dataclass(frozen=True)
 class OrchestratorConfig:
