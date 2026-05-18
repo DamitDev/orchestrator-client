@@ -12,6 +12,7 @@ from typing import Any
 # Pagination
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Pagination:
     current_page: int
@@ -26,6 +27,7 @@ class Pagination:
 # Task summaries and detail
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class TaskSummary:
     id: str
@@ -35,6 +37,7 @@ class TaskSummary:
     max_iterations: int
     goal_prompt: str
     result: str
+    result_localized: str | None
     approval_reason: str
     ticket_id: str | None
     available_tools: list[str] | None
@@ -42,11 +45,13 @@ class TaskSummary:
     insight_localized: str | None
     created_at: str
     updated_at: str
+    pending_translations_for_locales: list[str] | None = None
 
 
 @dataclass
 class TaskDetail(TaskSummary):
     """Full task status including fields returned by ``GET /task/status``."""
+
     subtask_ids: list[str] = field(default_factory=list)
     workflow_data: dict[str, Any] | None = None
 
@@ -81,6 +86,7 @@ class TaskDeleteResult:
 # Conversation / Messages
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AttachmentMeta:
     id: str
@@ -113,9 +119,6 @@ class Message:
     reasoning_summary: str | None = None
     tool_call_summary: str | None = None
     tool_output_summary: str | None = None
-    reasoning_summary_localized: str | None = None
-    tool_call_summary_localized: str | None = None
-    tool_output_summary_localized: str | None = None
     summary_source: str | None = None
     archived: bool = False
     archived_reason: str | None = None
@@ -137,9 +140,39 @@ class ArchivedContent:
     created_at: str
 
 
+@dataclass
+class MessageTranslation:
+    locale: str
+    kind: str
+    translated_text: str
+    is_fallback: bool = False
+    created_at: str | None = None
+
+
+@dataclass
+class MessageTranslationsResult:
+    message_id: int
+    translations: list[MessageTranslation] = field(default_factory=list)
+
+
+@dataclass
+class MessageTranslationReadyEvent:
+    task_id: str
+    message_id: int
+    locale: str
+    message_index: int
+    translated_content: str | None = None
+    translated_reasoning: str | None = None
+    translated_reasoning_summary: str | None = None
+    translated_tool_call_summary: str | None = None
+    translation_failed: bool = False
+    event_type: str = "message_translation_ready"
+
+
 # ---------------------------------------------------------------------------
 # Compaction / Journal
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class CompactionEvent:
@@ -172,6 +205,7 @@ class TaskJournal:
 # Attachments (upload response)
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AttachmentUploadResponse:
     id: str
@@ -186,6 +220,7 @@ class AttachmentUploadResponse:
 # ---------------------------------------------------------------------------
 # Tools
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ToolInfo:
@@ -204,6 +239,7 @@ class ToolsListResult:
 # ---------------------------------------------------------------------------
 # Error Events
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ErrorEvent:
@@ -251,6 +287,7 @@ class ErrorPurgeResult:
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class SystemStatusSettings:
     agent_model_id: str | None
@@ -261,6 +298,7 @@ class SystemStatusSettings:
     translate_model_id: str | None
     max_concurrent_tasks_per_replica: int | None
     subagents_enabled: bool | None
+    localization_targets: list[dict[str, str]] | None
 
 
 @dataclass
@@ -376,6 +414,7 @@ class ConfigurationStatus:
     orchestrator_model: str | None
     summary_model: str | None
     translate_model: str | None
+    localization_targets: list[dict[str, str]]
     llmbackends: list[LLMBackendInfo]
     mcpservers: list[MCPServerInfo]
     builtin_tools: list[str]
@@ -384,6 +423,7 @@ class ConfigurationStatus:
 # ---------------------------------------------------------------------------
 # Health / Metrics
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class HealthStatus:
@@ -449,6 +489,7 @@ class MetricSnapshot:
 # Auth / WebSocket status
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class AuthConfig:
     keycloak_enabled: bool
@@ -473,6 +514,7 @@ class WebSocketStatus:
 # ---------------------------------------------------------------------------
 # Workflow-specific interaction responses
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class SuccessResponse:
@@ -503,6 +545,7 @@ class VSATaskCreateResponse(TaskCreateResponse):
 # ---------------------------------------------------------------------------
 # Debug
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class WorkflowStates:

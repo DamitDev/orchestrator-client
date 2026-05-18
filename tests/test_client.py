@@ -1,6 +1,5 @@
 """Tests for the Orchestrator REST API client."""
 
-
 import pytest
 
 from orchestrator_client.client import OrchestratorAsync
@@ -17,16 +16,21 @@ class TestTaskMethods:
     @pytest.mark.asyncio
     async def test_list_tasks(self, mock_task_list_response):
         client = OrchestratorAsync(base_url="http://test:8080")
+        captured = {}
 
         async def fake_request(method, path, **kwargs):
+            captured["headers"] = kwargs.get("headers")
             return mock_task_list_response
 
         client._request = fake_request
-        result = await client.list_tasks()
+        result = await client.list_tasks(locale="hu-hu")
         assert len(result.tasks) == 1
         assert result.tasks[0].id == "task-abc123"
         assert result.tasks[0].workflow_id == "proactive"
+        assert result.tasks[0].result_localized == "Eredmény"
+        assert result.tasks[0].pending_translations_for_locales == ["hu-hu"]
         assert result.pagination.current_page == 1
+        assert captured["headers"] == {"X-Locale": "hu-hu"}
 
     @pytest.mark.asyncio
     async def test_list_tasks_with_filter(self):
@@ -35,7 +39,17 @@ class TestTaskMethods:
 
         async def fake_request(method, path, **kwargs):
             captured["params"] = kwargs.get("params", {})
-            return {"tasks": [], "pagination": {"current_page": 1, "per_page": 10, "total_items": 0, "total_pages": 0, "has_next": False, "has_prev": False}}
+            return {
+                "tasks": [],
+                "pagination": {
+                    "current_page": 1,
+                    "per_page": 10,
+                    "total_items": 0,
+                    "total_pages": 0,
+                    "has_next": False,
+                    "has_prev": False,
+                },
+            }
 
         client._request = fake_request
         await client.list_tasks(page=2, limit=10, workflow_id="matrix")
@@ -86,31 +100,39 @@ class TestTaskMethods:
     @pytest.mark.asyncio
     async def test_get_task_status(self, mock_task_status_response):
         client = OrchestratorAsync(base_url="http://test:8080")
+        captured = {}
 
         async def fake_request(method, path, **kwargs):
+            captured["headers"] = kwargs.get("headers")
             return mock_task_status_response
 
         client._request = fake_request
-        status = await client.get_task_status("task-abc123")
+        status = await client.get_task_status("task-abc123", locale="hu-hu")
         assert status.id == "task-abc123"
         assert status.status == "in_progress"
         assert status.iteration == 5
+        assert status.result_localized == "Eredmény"
+        assert status.pending_translations_for_locales == ["hu-hu"]
+        assert captured["headers"] == {"X-Locale": "hu-hu"}
 
     @pytest.mark.asyncio
     async def test_get_task_conversation(self, mock_conversation_response):
         client = OrchestratorAsync(base_url="http://test:8080")
+        captured = {}
 
         async def fake_request(method, path, **kwargs):
+            captured["headers"] = kwargs.get("headers")
             return mock_conversation_response
 
         client._request = fake_request
-        conv = await client.get_task_conversation("task-abc123")
+        conv = await client.get_task_conversation("task-abc123", locale="hu-hu")
         assert conv.task_id == "task-abc123"
         assert len(conv.conversation) == 3
         assert conv.conversation[0].role == "system"
         assert conv.conversation[2].role == "assistant"
         assert conv.conversation[2].tool_calls is not None
         assert len(conv.conversation[2].tool_calls) == 1
+        assert captured["headers"] == {"X-Locale": "hu-hu"}
 
     @pytest.mark.asyncio
     async def test_cancel_task(self, mock_success_response):
@@ -128,7 +150,12 @@ class TestTaskMethods:
         client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
-            return {"deleted_tasks": ["task-abc123"], "failed_tasks": [], "total_deleted": 1, "total_failed": 0}
+            return {
+                "deleted_tasks": ["task-abc123"],
+                "failed_tasks": [],
+                "total_deleted": 1,
+                "total_failed": 0,
+            }
 
         client._request = fake_request
         result = await client.delete_task("task-abc123")
@@ -141,12 +168,46 @@ class TestTaskMethods:
 
         async def fake_request(method, path, **kwargs):
             captured["body"] = kwargs.get("json_body", {})
-            return {"deleted_tasks": ["t1", "t2"], "failed_tasks": [], "total_deleted": 2, "total_failed": 0}
+            return {
+                "deleted_tasks": ["t1", "t2"],
+                "failed_tasks": [],
+                "total_deleted": 2,
+                "total_failed": 0,
+            }
 
         client._request = fake_request
         result = await client.delete_tasks(["t1", "t2"])
         assert captured["body"]["task_ids"] == ["t1", "t2"]
         assert result.total_deleted == 2
+
+    @pytest.mark.asyncio
+    async def test_get_message_translations(self):
+        client = OrchestratorAsync(base_url="http://test:8080")
+        captured = {}
+
+        async def fake_request(method, path, **kwargs):
+            captured["method"] = method
+            captured["path"] = path
+            return {
+                "message_id": 123,
+                "translations": [
+                    {
+                        "locale": "hu-hu",
+                        "kind": "content",
+                        "translated_text": "Szia",
+                        "is_fallback": False,
+                        "created_at": "2026-05-18T12:00:00Z",
+                    }
+                ],
+            }
+
+        client._request = fake_request
+        result = await client.get_message_translations("task-abc123", 123)
+        assert captured["method"] == "GET"
+        assert captured["path"] == "/debug/task/task-abc123/message/123/translations"
+        assert result.message_id == 123
+        assert result.translations[0].locale == "hu-hu"
+        assert result.translations[0].translated_text == "Szia"
 
 
 class TestWorkflowMethods:
@@ -228,7 +289,9 @@ class TestErrorHandling:
         client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
-            raise OrchestratorAPIError("Invalid state", status_code=400, error_code="INVALID_WORKFLOW_STATE")
+            raise OrchestratorAPIError(
+                "Invalid state", status_code=400, error_code="INVALID_WORKFLOW_STATE"
+            )
 
         client._request = fake_request
         with pytest.raises(OrchestratorAPIError) as exc:
@@ -268,6 +331,9 @@ class TestConfigurationMethods:
                     "translate_model_id": None,
                     "max_concurrent_tasks_per_replica": 5,
                     "subagents_enabled": True,
+                    "localization_targets": [
+                        {"locale": "hu-hu", "language": "Hungarian"}
+                    ],
                 },
                 "version": 7,
             }
@@ -277,6 +343,9 @@ class TestConfigurationMethods:
         assert status.is_configured is True
         assert status.settings.agent_model_id == "gpt-oss:20b"
         assert status.settings.max_concurrent_tasks_per_replica == 5
+        assert status.settings.localization_targets == [
+            {"locale": "hu-hu", "language": "Hungarian"}
+        ]
 
     @pytest.mark.asyncio
     async def test_update_settings(self):
@@ -288,13 +357,30 @@ class TestConfigurationMethods:
             return {
                 "is_configured": True,
                 "missing_fields": [],
-                "settings": {"agent_model_id": "gpt-oss:20b", "orchestrator_model_id": None, "compactor_model_id": None, "journal_model_id": None, "summary_model_id": None, "translate_model_id": None, "max_concurrent_tasks_per_replica": 5, "subagents_enabled": True},
+                "settings": {
+                    "agent_model_id": "gpt-oss:20b",
+                    "orchestrator_model_id": None,
+                    "compactor_model_id": None,
+                    "journal_model_id": None,
+                    "summary_model_id": None,
+                    "translate_model_id": None,
+                    "max_concurrent_tasks_per_replica": 5,
+                    "subagents_enabled": True,
+                    "localization_targets": [
+                        {"locale": "hu-hu", "language": "Hungarian"}
+                    ],
+                },
                 "version": 8,
             }
 
         client._request = fake_request
-        await client.update_settings(agent_model_id="gpt-oss:20b", max_concurrent_tasks_per_replica=5)
+        status = await client.update_settings(
+            agent_model_id="gpt-oss:20b", max_concurrent_tasks_per_replica=5
+        )
         assert captured["body"]["agent_model_id"] == "gpt-oss:20b"
+        assert status.settings.localization_targets == [
+            {"locale": "hu-hu", "language": "Hungarian"}
+        ]
 
 
 class TestHealthMethods:
@@ -305,7 +391,11 @@ class TestHealthMethods:
         client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
-            return {"status": "healthy", "message": "Orchestrator API is running", "version": "3.0.0"}
+            return {
+                "status": "healthy",
+                "message": "Orchestrator API is running",
+                "version": "3.0.0",
+            }
 
         client._request = fake_request
         result = await client.health()
@@ -333,7 +423,12 @@ class TestAuthAndWebSocket:
         client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
-            return {"keycloak_enabled": True, "keycloak_url": "https://keycloak.test/auth/", "keycloak_realm": "test", "keycloak_client_id": "test-client"}
+            return {
+                "keycloak_enabled": True,
+                "keycloak_url": "https://keycloak.test/auth/",
+                "keycloak_realm": "test",
+                "keycloak_client_id": "test-client",
+            }
 
         client._request = fake_request
         config = await client.get_auth_config()
@@ -359,7 +454,14 @@ class TestErrorEvents:
         client = OrchestratorAsync(base_url="http://test:8080")
 
         async def fake_request(method, path, **kwargs):
-            return {"id": "err-1", "severity": "critical", "source": "llm_backend", "message": "LLM failed", "traceback": "Traceback...", "context": {"model": "test"}}
+            return {
+                "id": "err-1",
+                "severity": "critical",
+                "source": "llm_backend",
+                "message": "LLM failed",
+                "traceback": "Traceback...",
+                "context": {"model": "test"},
+            }
 
         client._request = fake_request
         detail = await client.get_error_detail("err-1")

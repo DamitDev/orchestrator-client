@@ -24,6 +24,7 @@ class TestSyncClient:
                             "max_iterations": 50,
                             "goal_prompt": "Test",
                             "result": "Done",
+                            "result_localized": "Kész",
                             "approval_reason": "",
                             "ticket_id": None,
                             "available_tools": None,
@@ -31,6 +32,7 @@ class TestSyncClient:
                             "insight_localized": "Kész",
                             "created_at": "2025-10-14T10:30:00Z",
                             "updated_at": "2025-10-14T10:35:00Z",
+                            "pending_translations_for_locales": [],
                         }
                     ],
                     "pagination": {
@@ -45,7 +47,37 @@ class TestSyncClient:
             if path == "/task/create":
                 return {"task_id": "task-sync-1", "status": "queued"}
             if path == "/task/status":
-                return {"id": "task-sync-1", "status": "in_progress", "workflow_id": "proactive", "iteration": 5, "max_iterations": 50, "goal_prompt": "Test", "result": "", "approval_reason": "", "ticket_id": None, "insight": "Working...", "insight_localized": "Munka...", "subtask_ids": [], "created_at": "2025-10-14T10:30:00Z", "updated_at": "2025-10-14T10:35:00Z"}
+                return {
+                    "id": "task-sync-1",
+                    "status": "in_progress",
+                    "workflow_id": "proactive",
+                    "iteration": 5,
+                    "max_iterations": 50,
+                    "goal_prompt": "Test",
+                    "result": "",
+                    "result_localized": "Eredmény",
+                    "approval_reason": "",
+                    "ticket_id": None,
+                    "insight": "Working...",
+                    "insight_localized": "Munka...",
+                    "subtask_ids": [],
+                    "created_at": "2025-10-14T10:30:00Z",
+                    "updated_at": "2025-10-14T10:35:00Z",
+                    "pending_translations_for_locales": ["hu-hu"],
+                }
+            if path == "/debug/task/task-sync-1/message/123/translations":
+                return {
+                    "message_id": 123,
+                    "translations": [
+                        {
+                            "locale": "hu-hu",
+                            "kind": "content",
+                            "translated_text": "Szia",
+                            "is_fallback": False,
+                            "created_at": None,
+                        }
+                    ],
+                }
             if path == "/task/cancel":
                 return {"message": "Task cancelled"}
             if path == "/health":
@@ -68,9 +100,16 @@ class TestSyncClient:
         assert result.status == "queued"
 
     def test_get_task_status(self, client):
-        status = client.get_task_status("task-sync-1")
+        status = client.get_task_status("task-sync-1", locale="hu-hu")
         assert status.id == "task-sync-1"
         assert status.status == "in_progress"
+        assert status.result_localized == "Eredmény"
+        assert status.pending_translations_for_locales == ["hu-hu"]
+
+    def test_get_message_translations(self, client):
+        result = client.get_message_translations("task-sync-1", 123)
+        assert result.message_id == 123
+        assert result.translations[0].translated_text == "Szia"
 
     def test_cancel_task(self, client):
         result = client.cancel_task("task-sync-1")
