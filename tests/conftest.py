@@ -18,6 +18,7 @@ def mock_task_list_response() -> dict:
                 "max_iterations": 50,
                 "goal_prompt": "Analyze logs",
                 "result": "",
+                "result_localized": "Eredmény",
                 "approval_reason": "",
                 "ticket_id": None,
                 "available_tools": None,
@@ -25,6 +26,7 @@ def mock_task_list_response() -> dict:
                 "insight_localized": "Elemzés...",
                 "created_at": "2025-10-14T10:30:00Z",
                 "updated_at": "2025-10-14T10:35:00Z",
+                "pending_translations_for_locales": ["hu-hu"],
             }
         ],
         "pagination": {
@@ -53,6 +55,7 @@ def mock_task_status_response() -> dict:
         "max_iterations": 50,
         "goal_prompt": "Analyze logs",
         "result": "",
+        "result_localized": "Eredmény",
         "approval_reason": "",
         "ticket_id": None,
         "insight": "Analyzing...",
@@ -60,6 +63,7 @@ def mock_task_status_response() -> dict:
         "subtask_ids": [],
         "created_at": "2025-10-14T10:30:00Z",
         "updated_at": "2025-10-14T10:35:00Z",
+        "pending_translations_for_locales": ["hu-hu"],
     }
 
 
@@ -88,7 +92,10 @@ def mock_conversation_response() -> dict:
                     {
                         "id": "call_abc",
                         "type": "function",
-                        "function": {"name": "read_file", "arguments": '{"path": "/var/log/app.log"}'},
+                        "function": {
+                            "name": "read_file",
+                            "arguments": '{"path": "/var/log/app.log"}',
+                        },
                     }
                 ],
                 "created_at": "2025-10-14T10:32:00Z",
@@ -104,13 +111,25 @@ def mock_success_response() -> dict:
 
 @pytest.fixture
 def mock_error_response() -> dict:
-    return {"error": {"code": "TASK_NOT_FOUND", "message": "Task with id task-xyz not found", "details": None}}
+    return {
+        "error": {
+            "code": "TASK_NOT_FOUND",
+            "message": "Task with id task-xyz not found",
+            "details": None,
+        }
+    }
 
 
 class MockAsyncResponse:
     """Minimal async httpx.Response stand-in for tests."""
 
-    def __init__(self, status_code: int, json_data: Any = None, text: str = "", headers: dict = None):
+    def __init__(
+        self,
+        status_code: int,
+        json_data: Any = None,
+        text: str = "",
+        headers: dict = None,
+    ):
         self.status_code = status_code
         self._json_data = json_data
         self._text = text

@@ -37,6 +37,7 @@ EVENT_TASK_INSIGHT_UPDATED = "task_insight_updated"
 EVENT_MESSAGE_ADDED = "message_added"
 EVENT_MESSAGE_STREAMING = "message_streaming"
 EVENT_MESSAGE_SUMMARY_GENERATED = "message_summary_generated"
+EVENT_MESSAGE_TRANSLATION_READY = "message_translation_ready"
 EVENT_MESSAGE_UPDATED = "message_updated"
 EVENT_MESSAGE_DELETED = "message_deleted"
 EVENT_APPROVAL_REQUESTED = "approval_requested"
@@ -74,11 +75,20 @@ class RealtimeClient:
     registered via ``on(event_type, handler)``.
     """
 
-    def __init__(self, base_url: str, *, client_id: str = "orchestrator-client"):
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        client_id: str = "orchestrator-client",
+        locale: str | None = None,
+    ):
         self._base_url = base_url.rstrip("/")
         self._client_id = client_id
+        self._locale = locale
         self._sio = socketio.AsyncClient()
-        self._handlers: dict[str, list[Callable[[dict[str, Any]], Awaitable[None]]]] = {}
+        self._handlers: dict[str, list[Callable[[dict[str, Any]], Awaitable[None]]]] = (
+            {}
+        )
         self._connected = False
 
         # Register the raw message handler
@@ -120,10 +130,14 @@ class RealtimeClient:
         (``subscribe_task``, ``subscribe_events``) to start
         receiving events.
         """
+        query: dict[str, str] = {"client_id": self._client_id}
+        if self._locale:
+            query["locale"] = self._locale
+
         await self._sio.connect(
             self._base_url,
             socketio_path="/socket.io",
-            query={"client_id": self._client_id},
+            query=query,
             wait_timeout=10,
         )
 
@@ -147,6 +161,7 @@ class RealtimeClient:
             "all"                    — Receive all events
             "event:{event_type}"    — Specific event type (e.g. ``event:task_status_changed``)
             "task:{task_id}"         — All events for a specific task
+            "locale:{locale}"        — Locale-scoped translation-ready events
 
         The server responds with a ``rooms_updated`` event confirming
         the subscription.
@@ -184,6 +199,14 @@ class RealtimeClient:
         """Shortcut: subscribe to all events."""
         await self.join_rooms(["all"])
 
+    async def subscribe_locale(self, locale: str) -> None:
+        """Shortcut: subscribe to translation-ready events for a locale."""
+        await self.join_rooms([f"locale:{locale}"])
+
+    async def unsubscribe_locale(self, locale: str) -> None:
+        """Shortcut: unsubscribe from translation-ready events for a locale."""
+        await self.leave_rooms([f"locale:{locale}"])
+
     async def ping(self) -> None:
         """Send a ping to verify the connection is alive.
 
@@ -191,7 +214,9 @@ class RealtimeClient:
         """
         await self._sio.emit("ping", {})
 
-    def on(self, event_type: str, handler: Callable[[dict[str, Any]], Awaitable[None]]) -> None:
+    def on(
+        self, event_type: str, handler: Callable[[dict[str, Any]], Awaitable[None]]
+    ) -> None:
         """Register a handler for a specific event type.
 
         The handler receives the decoded event dict (the contents of the
@@ -217,7 +242,9 @@ class RealtimeClient:
         if handler is None:
             del self._handlers[event_type]
         else:
-            self._handlers[event_type] = [h for h in self._handlers[event_type] if h is not handler]
+            self._handlers[event_type] = [
+                h for h in self._handlers[event_type] if h is not handler
+            ]
             if not self._handlers[event_type]:
                 del self._handlers[event_type]
 

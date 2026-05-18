@@ -54,6 +54,9 @@ from orchestrator_client.models import (
     MatrixConversationResult,
     # Conversation
     Message,
+    MessageTranslation,
+    MessageTranslationReadyEvent,
+    MessageTranslationsResult,
     MetricSnapshot,
     MioContext,
     Pagination,
@@ -112,6 +115,9 @@ __all__ = [
     "Pagination",
     # Conversation
     "Message",
+    "MessageTranslationReadyEvent",
+    "MessageTranslation",
+    "MessageTranslationsResult",
     "ConversationResult",
     "AttachmentMeta",
     "ToolCall",

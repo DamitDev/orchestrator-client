@@ -49,6 +49,7 @@ from orchestrator_client.models import (
     HealthStatus,
     LeaderStatus,
     MatrixConversationResult,
+    MessageTranslationsResult,
     MetricSnapshot,
     MioContext,
     ReadinessResult,
@@ -106,7 +107,9 @@ class Orchestrator:
     def close(self) -> None:
         """Close the underlying HTTP session and event loop."""
         try:
-            self._loop.run_until_complete(self._async_client.__aexit__(None, None, None))
+            self._loop.run_until_complete(
+                self._async_client.__aexit__(None, None, None)
+            )
         finally:
             self._loop.close()
 
@@ -131,6 +134,7 @@ class Orchestrator:
         order_by: str = "updated_at",
         order_direction: str = "desc",
         workflow_id: Optional[str] = None,
+        locale: Optional[str] = None,
     ) -> TaskListResult:
         return self._run(
             self._async_client.list_tasks(
@@ -139,6 +143,7 @@ class Orchestrator:
                 order_by=order_by,
                 order_direction=order_direction,
                 workflow_id=workflow_id,
+                locale=locale,
             )
         )
 
@@ -181,8 +186,10 @@ class Orchestrator:
             )
         )
 
-    def get_task_status(self, task_id: str) -> TaskDetail:
-        return self._run(self._async_client.get_task_status(task_id))
+    def get_task_status(
+        self, task_id: str, *, locale: Optional[str] = None
+    ) -> TaskDetail:
+        return self._run(self._async_client.get_task_status(task_id, locale=locale))
 
     def get_task_conversation(
         self,
@@ -190,12 +197,14 @@ class Orchestrator:
         *,
         include_summaries: bool = True,
         exclude_archived: bool = False,
+        locale: Optional[str] = None,
     ) -> ConversationResult:
         return self._run(
             self._async_client.get_task_conversation(
                 task_id,
                 include_summaries=include_summaries,
                 exclude_archived=exclude_archived,
+                locale=locale,
             )
         )
 
@@ -279,9 +288,7 @@ class Orchestrator:
         )
 
     def respond_proactive_help(self, task_id: str, response: str) -> SuccessResponse:
-        return self._run(
-            self._async_client.respond_proactive_help(task_id, response)
-        )
+        return self._run(self._async_client.respond_proactive_help(task_id, response))
 
     def approve_proactive_action(
         self, task_id: str, *, approved: bool = True
@@ -502,9 +509,7 @@ class Orchestrator:
     def delete_message(self, task_id: str, message_id: int) -> SuccessResponse:
         return self._run(self._async_client.delete_message(task_id, message_id))
 
-    def delete_messages(
-        self, task_id: str, message_ids: List[int]
-    ) -> Dict[str, Any]:
+    def delete_messages(self, task_id: str, message_ids: List[int]) -> Dict[str, Any]:
         return self._run(self._async_client.delete_messages(task_id, message_ids))
 
     def update_message(
@@ -526,6 +531,13 @@ class Orchestrator:
 
     def reset_matrix_to_phase(self, task_id: str, phase: int) -> SuccessResponse:
         return self._run(self._async_client.reset_matrix_to_phase(task_id, phase))
+
+    def get_message_translations(
+        self, task_id: str, message_id: int
+    ) -> MessageTranslationsResult:
+        return self._run(
+            self._async_client.get_message_translations(task_id, message_id)
+        )
 
     # ==================================================================
     # 6. Error Events
@@ -574,9 +586,7 @@ class Orchestrator:
     def get_error_stats(
         self, *, since: Optional[str] = None, top_n: int = 10
     ) -> ErrorStatsResult:
-        return self._run(
-            self._async_client.get_error_stats(since=since, top_n=top_n)
-        )
+        return self._run(self._async_client.get_error_stats(since=since, top_n=top_n))
 
     def count_errors(
         self, since: str, *, severity: Optional[str] = None
@@ -649,9 +659,7 @@ class Orchestrator:
         return self._run(self._async_client.get_taskhandler_status_local())
 
     def set_concurrent_tasks_per_replica(self, max_tasks: int) -> SuccessResponse:
-        return self._run(
-            self._async_client.set_concurrent_tasks_per_replica(max_tasks)
-        )
+        return self._run(self._async_client.set_concurrent_tasks_per_replica(max_tasks))
 
     def get_summary_worker_status(self) -> SummaryWorkerStatus:
         return self._run(self._async_client.get_summary_worker_status())
@@ -690,9 +698,13 @@ class Orchestrator:
         The async version is a streaming generator; the sync version
         runs the stream to completion and returns all events as a list.
         """
+
         async def _collect() -> List[Dict[str, Any]]:
             events: List[Dict[str, Any]] = []
-            async for event in self._async_client.stream_task_status(task_id, timeout=timeout):
+            async for event in self._async_client.stream_task_status(
+                task_id, timeout=timeout
+            ):
                 events.append(event)
             return events
+
         return self._run(_collect())
