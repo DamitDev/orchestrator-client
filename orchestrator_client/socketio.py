@@ -32,6 +32,7 @@ EVENT_TASK_CREATED = "task_created"
 EVENT_TASK_STATUS_CHANGED = "task_status_changed"
 EVENT_TASK_ITERATION_CHANGED = "task_iteration_changed"
 EVENT_TASK_DELETED = "task_deleted"
+EVENT_TASK_BULK_DELETED = "task_bulk_deleted"
 EVENT_TASK_RESULT_UPDATED = "task_result_updated"
 EVENT_TASK_INSIGHT_UPDATED = "task_insight_updated"
 EVENT_MESSAGE_ADDED = "message_added"
@@ -59,6 +60,9 @@ EVENT_TOKEN_WORKER_STATUS = "token_worker_status"
 EVENT_TOKEN_COUNT_UPDATED = "token_count_updated"
 EVENT_MESSAGES_ARCHIVED = "messages_archived"
 EVENT_ERROR_EVENT_RECORDED = "error_event_recorded"
+EVENT_SUBPROCESS_STARTED = "subprocess_started"
+EVENT_SUBPROCESS_COMPLETED = "subprocess_completed"
+EVENT_SUBPROCESS_FAILED = "subprocess_failed"
 
 
 class RealtimeClient:

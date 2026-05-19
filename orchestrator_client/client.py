@@ -33,6 +33,8 @@ from orchestrator_client.models import (
     AttachmentMeta,
     AttachmentUploadResponse,
     AuthConfig,
+    CatalogValidationIssue,
+    CatalogValidationResult,
     CompactionEvent,
     ConfigurationStatus,
     ConversationResult,
@@ -44,14 +46,21 @@ from orchestrator_client.models import (
     HealthStatus,
     LeaderStatus,
     MatrixConversationResult,
+    MCPRefreshResult,
     Message,
+    MessageDeleteMultipleResult,
     MessageTranslation,
     MessageTranslationsResult,
     MetricSnapshot,
     MioContext,
+    MioMemoriesResult,
+    MioMemoryItem,
     Pagination,
     ReadinessResult,
+    ReloadServicesResult,
+    ReloadStatus,
     SlotsStatus,
+    SubagentsStatus,
     SuccessResponse,
     SummaryWorkerStatus,
     SystemStatus,
@@ -65,9 +74,12 @@ from orchestrator_client.models import (
     TaskSummary,
     TokenWorkerStatus,
     ToolCall,
+    ToolCatalogEntry,
+    ToolCatalogResult,
     ToolInfo,
     ToolsListResult,
     VSATaskCreateResponse,
+    WebSocketClientInfo,
     WebSocketStatus,
     WorkflowStates,
 )
@@ -531,6 +543,13 @@ class OrchestratorAsync:
             total_failed=data.get("total_failed", 0),
         )
 
+    async def set_task_status(self, task_id: str, status: str) -> SuccessResponse:
+        """Force-set a task to a specific status (admin use)."""
+        data = await self._request(
+            "POST", "/task/set_status", json_body={"task_id": task_id, "status": status}
+        )
+        return SuccessResponse(message=data.get("message", ""))
+
     # ==================================================================
     # 2. Attachments
     # ==================================================================
@@ -639,6 +658,11 @@ class OrchestratorAsync:
             "/task/interactive/action",
             json_body={"task_id": task_id, "approved": approved},
         )
+        return SuccessResponse(message=data.get("message", ""))
+
+    async def stop_interactive(self, task_id: str) -> SuccessResponse:
+        """Stop an interactive workflow task."""
+        data = await self._request("POST", "/task/interactive/stop", json_body={"task_id": task_id})
         return SuccessResponse(message=data.get("message", ""))
 
     # -- Proactive --
@@ -918,12 +942,39 @@ class OrchestratorAsync:
         data = await self._request("GET", "/task/self_managed/context", params={"task_id": task_id})
         return MioContext(
             task_id=data.get("task_id", task_id),
+            model_id=data.get("model_id", ""),
             current_tokens=data.get("current_tokens", 0),
             context_limit=data.get("context_limit", 0),
             usage_percentage=data.get("usage_percentage", 0.0),
-            archived_count=data.get("archived_count", 0),
-            active_count=data.get("active_count", 0),
+            total_messages=data.get("total_messages", 0),
+            active_messages=data.get("active_messages", 0),
+            archived_messages=data.get("archived_messages", 0),
+            messages_without_token_count=data.get("messages_without_token_count", 0),
         )
+
+    async def get_mio_memories(
+        self, task_id: str, *, include_common: bool = False
+    ) -> MioMemoriesResult:
+        """Get long-term memories for a Mio task."""
+        data = await self._request(
+            "GET",
+            "/task/self_managed/memories",
+            params={"task_id": task_id, "include_common": str(include_common).lower()},
+        )
+        memories = [
+            MioMemoryItem(
+                id=m.get("id", ""),
+                title=m.get("title", ""),
+                content=m.get("content", ""),
+                tags=m.get("tags", []),
+                created_at=m.get("created_at", ""),
+                updated_at=m.get("updated_at", ""),
+                task_id=m.get("task_id"),
+                linked_task_id=m.get("linked_task_id"),
+            )
+            for m in data.get("memories", [])
+        ]
+        return MioMemoriesResult(memories=memories, total=data.get("total", 0))
 
     # ==================================================================
     # 4. Tools
@@ -938,6 +989,50 @@ class OrchestratorAsync:
             total_tools=data.get("total_tools", 0),
             servers=data.get("servers", []),
         )
+
+    async def get_tool_catalog(self) -> ToolCatalogResult:
+        """Get the full tool catalog with metadata, tags, and fragment info."""
+        data = await self._request("GET", "/tools/catalog")
+        tools = [
+            ToolCatalogEntry(
+                name=t.get("name", ""),
+                description=t.get("description", ""),
+                provenance_kind=t.get("provenance_kind", ""),
+                category=t.get("category", ""),
+                tags=t.get("tags", []),
+                dangerous=t.get("dangerous", False),
+                has_fragment=t.get("has_fragment", False),
+                provenance_server=t.get("provenance_server"),
+                workflow_ids=t.get("workflow_ids"),
+            )
+            for t in data.get("tools", [])
+        ]
+        return ToolCatalogResult(
+            tools=tools,
+            total_tools=data.get("total_tools", 0),
+            providers=data.get("providers", []),
+        )
+
+    async def refresh_mcp_tools(self) -> MCPRefreshResult:
+        """Trigger a refresh of all MCP server tool registries."""
+        data = await self._request("POST", "/tools/mcp/refresh")
+        return MCPRefreshResult(
+            results=data.get("results", {}),
+            total_refreshed=data.get("total_refreshed", 0),
+        )
+
+    async def validate_tool_catalog(self) -> CatalogValidationResult:
+        """Validate tool catalog fragment coverage."""
+        data = await self._request("GET", "/tools/validate")
+        issues = [
+            CatalogValidationIssue(
+                tool_name=i.get("tool_name", ""),
+                issue_type=i.get("issue_type", ""),
+                detail=i.get("detail", ""),
+            )
+            for i in data.get("issues", [])
+        ]
+        return CatalogValidationResult(issues=issues, total_issues=data.get("total_issues", 0))
 
     # ==================================================================
     # 5. Debug Endpoints
@@ -995,9 +1090,17 @@ class OrchestratorAsync:
         data = await self._request("POST", "/debug/task/message/delete", json_body=body)
         return SuccessResponse(message=data.get("message", ""))
 
-    async def delete_messages(self, task_id: str, message_ids: list[int]) -> dict[str, Any]:
+    async def delete_messages(
+        self, task_id: str, message_ids: list[int]
+    ) -> MessageDeleteMultipleResult:
         body = {"task_id": task_id, "message_ids": message_ids}
-        return await self._request("POST", "/debug/task/message/delete/multiple", json_body=body)
+        data = await self._request("POST", "/debug/task/message/delete/multiple", json_body=body)
+        return MessageDeleteMultipleResult(
+            deleted_ids=data.get("deleted_ids", []),
+            failed_ids=data.get("failed_ids", []),
+            total_deleted=data.get("total_deleted", 0),
+            total_failed=data.get("total_failed", 0),
+        )
 
     async def update_message(
         self,
@@ -1294,36 +1397,19 @@ class OrchestratorAsync:
 
     async def get_configuration_status(self) -> ConfigurationStatus:
         data = await self._request("GET", "/configuration/status")
-        llmbackends = [
-            type(
-                "LLMBackendInfo",
-                (),
-                {"host": b.get("host", ""), "models": b.get("models", [])},
-            )()
-            for b in data.get("llmbackends", [])
-        ]
-        mcpservers = [
-            type(
-                "MCPServerInfo",
-                (),
-                {
-                    "base_url": s.get("base_url", ""),
-                    "name": s.get("name", ""),
-                    "description": s.get("description", ""),
-                    "tools": s.get("tools", []),
-                },
-            )()
-            for s in data.get("mcpservers", [])
-        ]
         return ConfigurationStatus(
             agent_model=data.get("agent_model"),
             orchestrator_model=data.get("orchestrator_model"),
             summary_model=data.get("summary_model"),
             translate_model=data.get("translate_model"),
+            llm_backends_count=data.get("llm_backends_count", 0),
+            mcp_servers_count=data.get("mcp_servers_count", 0),
+            total_tasks=data.get("total_tasks", 0),
+            queued_tasks=data.get("queued_tasks", 0),
+            active_tasks=data.get("active_tasks", 0),
+            pending_approval_tasks=data.get("pending_approval_tasks", 0),
+            subagents_enabled=data.get("subagents_enabled", False),
             localization_targets=data.get("localization_targets", []),
-            llmbackends=llmbackends,
-            mcpservers=mcpservers,
-            builtin_tools=data.get("builtin_tools", []),
         )
 
     async def set_agent_model(self, model: str) -> SuccessResponse:
@@ -1498,6 +1584,39 @@ class OrchestratorAsync:
             slots=slots,
         )
 
+    async def get_subagents_status(self) -> SubagentsStatus:
+        """Get subagent feature flag status."""
+        data = await self._request("GET", "/configuration/subagents/status")
+        return SubagentsStatus(subagents_enabled=data.get("subagents_enabled", False))
+
+    async def set_subagents_enabled(self, enabled: bool) -> SuccessResponse:
+        """Enable or disable subagent support."""
+        data = await self._request(
+            "POST", "/configuration/subagents", json_body={"enabled": enabled}
+        )
+        return SuccessResponse(message=data.get("message", ""))
+
+    async def reload_services(self) -> ReloadServicesResult:
+        """Trigger a reload of LLM backends, MCP servers, and slot manager."""
+        data = await self._request("POST", "/configuration/reload")
+        return ReloadServicesResult(
+            timestamp=data.get("timestamp", ""),
+            llm_backends=data.get("llm_backends", {}),
+            mcp_servers=data.get("mcp_servers", {}),
+            slot_manager=data.get("slot_manager", {}),
+            next_scheduled_reload=data.get("next_scheduled_reload"),
+        )
+
+    async def get_reload_status(self) -> ReloadStatus:
+        """Get the auto-reload schedule and last reload info."""
+        data = await self._request("GET", "/configuration/reload/status")
+        return ReloadStatus(
+            enabled=data.get("enabled", False),
+            interval_hours=data.get("interval_hours"),
+            last_reload=data.get("last_reload"),
+            next_scheduled_reload=data.get("next_scheduled_reload"),
+        )
+
     # ==================================================================
     # 9. Auth / WebSocket status
     # ==================================================================
@@ -1514,20 +1633,17 @@ class OrchestratorAsync:
     async def get_websocket_status(self) -> WebSocketStatus:
         data = await self._request("GET", "/websocket/status")
         clients = [
-            type(
-                "WebSocketClientInfo",
-                (),
-                {
-                    "client_id": c.get("client_id", ""),
-                    "subscription": c.get("subscription", {}),
-                    "connected": c.get("connected", False),
-                },
-            )()
+            WebSocketClientInfo(
+                client_id=c.get("client_id", ""),
+                connected_at=c.get("connected_at", ""),
+            )
             for c in data.get("clients", [])
         ]
         return WebSocketStatus(
             connected_clients=data.get("connected_clients", 0),
             clients=clients,
+            event_listener_healthy=data.get("event_listener_healthy", False),
+            last_event_time=data.get("last_event_time"),
         )
 
     # ==================================================================
