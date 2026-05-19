@@ -86,6 +86,9 @@ class Orchestrator:
         api_key:      Optional bearer token.
         timeout:      Default per-request timeout in seconds.
         max_retries:  Max retry attempts on transient failures.
+        verify_ssl:   Whether to verify SSL certificates. Set to ``False`` for
+                      self-signed certificates (default ``True``).
+        http_client:  Optional pre-configured ``httpx.AsyncClient``.
     """
 
     def __init__(
@@ -94,6 +97,8 @@ class Orchestrator:
         api_key: Optional[str] = None,
         timeout: float = 30.0,
         max_retries: int = 3,
+        verify_ssl: bool = True,
+        http_client: Any = None,
     ):
         self._loop = asyncio.new_event_loop()
         self._async_client = _OrchestratorAsync(
@@ -101,6 +106,8 @@ class Orchestrator:
             api_key=api_key,
             timeout=timeout,
             max_retries=max_retries,
+            verify_ssl=verify_ssl,
+            http_client=http_client,
         )
         self._loop.run_until_complete(self._async_client.__aenter__())
 

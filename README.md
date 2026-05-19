@@ -49,6 +49,29 @@ client.close()
 | `ORCHESTRATOR_TIMEOUT` | `30.0` | HTTP timeout (seconds) |
 | `ORCHESTRATOR_MAX_RETRIES` | `3` | Max retry attempts |
 
+## SSL / Self-Signed Certificates
+
+For orchestrator instances behind HTTPS with self-signed certificates,
+pass ``verify_ssl=False``:
+
+```python
+from orchestrator_client import Orchestrator
+
+client = Orchestrator(
+    base_url="https://orchestrator.internal:8443",
+    verify_ssl=False,
+)
+```
+
+Or inject a pre-configured ``httpx.AsyncClient`` for full control:
+
+```python
+import httpx
+from orchestrator_client import OrchestratorAsync
+
+custom = httpx.AsyncClient(verify=False, timeout=httpx.Timeout(60.0))
+client = OrchestratorAsync(http_client=custom)
+
 ## Async Variant
 
 For use inside async code (e.g. FastAPI, asyncio scripts):
