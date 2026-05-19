@@ -31,7 +31,7 @@ Or use the context manager::
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from orchestrator_client.client import OrchestratorAsync as _OrchestratorAsync
 from orchestrator_client.models import (
@@ -94,7 +94,7 @@ class Orchestrator:
     def __init__(
         self,
         base_url: str = "http://localhost:8080",
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         timeout: float = 30.0,
         max_retries: int = 3,
         verify_ssl: bool = True,
@@ -114,9 +114,7 @@ class Orchestrator:
     def close(self) -> None:
         """Close the underlying HTTP session and event loop."""
         try:
-            self._loop.run_until_complete(
-                self._async_client.__aexit__(None, None, None)
-            )
+            self._loop.run_until_complete(self._async_client.__aexit__(None, None, None))
         finally:
             self._loop.close()
 
@@ -140,8 +138,8 @@ class Orchestrator:
         limit: int = 25,
         order_by: str = "updated_at",
         order_direction: str = "desc",
-        workflow_id: Optional[str] = None,
-        locale: Optional[str] = None,
+        workflow_id: str | None = None,
+        locale: str | None = None,
     ) -> TaskListResult:
         return self._run(
             self._async_client.list_tasks(
@@ -161,18 +159,18 @@ class Orchestrator:
         *,
         max_iterations: int = 100,
         reasoning_effort: str = "medium",
-        system_prompt: Optional[str] = None,
-        developer_prompt: Optional[str] = None,
-        ticket_id: Optional[str] = None,
-        ticket_text: Optional[str] = None,
-        summary: Optional[str] = None,
-        problem_summary: Optional[str] = None,
-        solution_strategy: Optional[str] = None,
-        agent_model_id: Optional[str] = None,
-        orchestrator_model_id: Optional[str] = None,
-        available_tools: Optional[List[str]] = None,
-        attachment_ids: Optional[List[str]] = None,
-        options: Optional[Dict[str, Any]] = None,
+        system_prompt: str | None = None,
+        developer_prompt: str | None = None,
+        ticket_id: str | None = None,
+        ticket_text: str | None = None,
+        summary: str | None = None,
+        problem_summary: str | None = None,
+        solution_strategy: str | None = None,
+        agent_model_id: str | None = None,
+        orchestrator_model_id: str | None = None,
+        available_tools: list[str] | None = None,
+        attachment_ids: list[str] | None = None,
+        options: dict[str, Any] | None = None,
     ) -> TaskCreateResponse:
         return self._run(
             self._async_client.create_task(
@@ -195,9 +193,7 @@ class Orchestrator:
             )
         )
 
-    def get_task_status(
-        self, task_id: str, *, locale: Optional[str] = None
-    ) -> TaskDetail:
+    def get_task_status(self, task_id: str, *, locale: str | None = None) -> TaskDetail:
         return self._run(self._async_client.get_task_status(task_id, locale=locale))
 
     def get_task_conversation(
@@ -206,7 +202,7 @@ class Orchestrator:
         *,
         include_summaries: bool = True,
         exclude_archived: bool = False,
-        locale: Optional[str] = None,
+        locale: str | None = None,
     ) -> ConversationResult:
         return self._run(
             self._async_client.get_task_conversation(
@@ -217,14 +213,10 @@ class Orchestrator:
             )
         )
 
-    def get_archived_message_content(
-        self, task_id: str, message_id: int
-    ) -> ArchivedContent:
-        return self._run(
-            self._async_client.get_archived_message_content(task_id, message_id)
-        )
+    def get_archived_message_content(self, task_id: str, message_id: int) -> ArchivedContent:
+        return self._run(self._async_client.get_archived_message_content(task_id, message_id))
 
-    def get_task_compactions(self, task_id: str) -> List[CompactionEvent]:
+    def get_task_compactions(self, task_id: str) -> list[CompactionEvent]:
         return self._run(self._async_client.get_task_compactions(task_id))
 
     def get_task_journal(self, task_id: str) -> TaskJournal:
@@ -236,7 +228,7 @@ class Orchestrator:
     def delete_task(self, task_id: str) -> TaskDeleteResult:
         return self._run(self._async_client.delete_task(task_id))
 
-    def delete_tasks(self, task_ids: List[str]) -> TaskDeleteResult:
+    def delete_tasks(self, task_ids: list[str]) -> TaskDeleteResult:
         return self._run(self._async_client.delete_tasks(task_ids))
 
     # ==================================================================
@@ -244,18 +236,14 @@ class Orchestrator:
     # ==================================================================
 
     def upload_attachment(
-        self, file_path: Union[str, Path], *, mime_type: Optional[str] = None
+        self, file_path: str | Path, *, mime_type: str | None = None
     ) -> AttachmentUploadResponse:
-        return self._run(
-            self._async_client.upload_attachment(file_path, mime_type=mime_type)
-        )
+        return self._run(self._async_client.upload_attachment(file_path, mime_type=mime_type))
 
     def download_attachment(
-        self, attachment_id: str, *, outfile: Optional[Union[str, Path]] = None
+        self, attachment_id: str, *, outfile: str | Path | None = None
     ) -> bytes:
-        return self._run(
-            self._async_client.download_attachment(attachment_id, outfile=outfile)
-        )
+        return self._run(self._async_client.download_attachment(attachment_id, outfile=outfile))
 
     # ==================================================================
     # 3. Workflow-Specific Interactions
@@ -264,7 +252,7 @@ class Orchestrator:
     # -- Interactive --
 
     def send_interactive_message(
-        self, task_id: str, message: str, *, attachment_ids: Optional[List[str]] = None
+        self, task_id: str, message: str, *, attachment_ids: list[str] | None = None
     ) -> SuccessResponse:
         return self._run(
             self._async_client.send_interactive_message(
@@ -278,54 +266,38 @@ class Orchestrator:
     def mark_interactive_failed(self, task_id: str) -> SuccessResponse:
         return self._run(self._async_client.mark_interactive_failed(task_id))
 
-    def approve_interactive_action(
-        self, task_id: str, *, approved: bool = True
-    ) -> SuccessResponse:
-        return self._run(
-            self._async_client.approve_interactive_action(task_id, approved=approved)
-        )
+    def approve_interactive_action(self, task_id: str, *, approved: bool = True) -> SuccessResponse:
+        return self._run(self._async_client.approve_interactive_action(task_id, approved=approved))
 
     # -- Proactive --
 
     def send_proactive_guide(
-        self, task_id: str, message: str, *, attachment_ids: Optional[List[str]] = None
+        self, task_id: str, message: str, *, attachment_ids: list[str] | None = None
     ) -> SuccessResponse:
         return self._run(
-            self._async_client.send_proactive_guide(
-                task_id, message, attachment_ids=attachment_ids
-            )
+            self._async_client.send_proactive_guide(task_id, message, attachment_ids=attachment_ids)
         )
 
     def respond_proactive_help(self, task_id: str, response: str) -> SuccessResponse:
         return self._run(self._async_client.respond_proactive_help(task_id, response))
 
-    def approve_proactive_action(
-        self, task_id: str, *, approved: bool = True
-    ) -> SuccessResponse:
-        return self._run(
-            self._async_client.approve_proactive_action(task_id, approved=approved)
-        )
+    def approve_proactive_action(self, task_id: str, *, approved: bool = True) -> SuccessResponse:
+        return self._run(self._async_client.approve_proactive_action(task_id, approved=approved))
 
     # -- Ticket --
 
     def send_ticket_guide(
-        self, task_id: str, message: str, *, attachment_ids: Optional[List[str]] = None
+        self, task_id: str, message: str, *, attachment_ids: list[str] | None = None
     ) -> SuccessResponse:
         return self._run(
-            self._async_client.send_ticket_guide(
-                task_id, message, attachment_ids=attachment_ids
-            )
+            self._async_client.send_ticket_guide(task_id, message, attachment_ids=attachment_ids)
         )
 
     def respond_ticket_help(self, task_id: str, response: str) -> SuccessResponse:
         return self._run(self._async_client.respond_ticket_help(task_id, response))
 
-    def approve_ticket_action(
-        self, task_id: str, *, approved: bool = True
-    ) -> SuccessResponse:
-        return self._run(
-            self._async_client.approve_ticket_action(task_id, approved=approved)
-        )
+    def approve_ticket_action(self, task_id: str, *, approved: bool = True) -> SuccessResponse:
+        return self._run(self._async_client.approve_ticket_action(task_id, approved=approved))
 
     def wake_ticket(self, task_id: str) -> SuccessResponse:
         return self._run(self._async_client.wake_ticket(task_id))
@@ -333,12 +305,10 @@ class Orchestrator:
     # -- Matrix --
 
     def send_matrix_message(
-        self, task_id: str, message: str, *, attachment_ids: Optional[List[str]] = None
+        self, task_id: str, message: str, *, attachment_ids: list[str] | None = None
     ) -> SuccessResponse:
         return self._run(
-            self._async_client.send_matrix_message(
-                task_id, message, attachment_ids=attachment_ids
-            )
+            self._async_client.send_matrix_message(task_id, message, attachment_ids=attachment_ids)
         )
 
     def mark_matrix_complete(self, task_id: str) -> SuccessResponse:
@@ -347,12 +317,8 @@ class Orchestrator:
     def mark_matrix_failed(self, task_id: str) -> SuccessResponse:
         return self._run(self._async_client.mark_matrix_failed(task_id))
 
-    def approve_matrix_action(
-        self, task_id: str, *, approved: bool = True
-    ) -> SuccessResponse:
-        return self._run(
-            self._async_client.approve_matrix_action(task_id, approved=approved)
-        )
+    def approve_matrix_action(self, task_id: str, *, approved: bool = True) -> SuccessResponse:
+        return self._run(self._async_client.approve_matrix_action(task_id, approved=approved))
 
     def get_matrix_conversation(
         self, task_id: str, phase: int, *, include_summaries: bool = True
@@ -370,9 +336,9 @@ class Orchestrator:
         user_id: str,
         goal_prompt: str,
         *,
-        title: Optional[str] = None,
-        attachment_ids: Optional[List[str]] = None,
-        options: Optional[Dict[str, Any]] = None,
+        title: str | None = None,
+        attachment_ids: list[str] | None = None,
+        options: dict[str, Any] | None = None,
     ) -> VSATaskCreateResponse:
         return self._run(
             self._async_client.create_vsa_task(
@@ -385,12 +351,10 @@ class Orchestrator:
         )
 
     def send_vsa_message(
-        self, task_id: str, message: str, *, attachment_ids: Optional[List[str]] = None
+        self, task_id: str, message: str, *, attachment_ids: list[str] | None = None
     ) -> SuccessResponse:
         return self._run(
-            self._async_client.send_vsa_message(
-                task_id, message, attachment_ids=attachment_ids
-            )
+            self._async_client.send_vsa_message(task_id, message, attachment_ids=attachment_ids)
         )
 
     def rename_vsa_task(self, task_id: str, title: str) -> SuccessResponse:
@@ -413,39 +377,29 @@ class Orchestrator:
 
     def list_vsa_tasks(
         self, user_id: str, *, limit: int = 200, offset: int = 0
-    ) -> List[TaskSummary]:
-        return self._run(
-            self._async_client.list_vsa_tasks(user_id, limit=limit, offset=offset)
-        )
+    ) -> list[TaskSummary]:
+        return self._run(self._async_client.list_vsa_tasks(user_id, limit=limit, offset=offset))
 
-    def search_vsa_tasks(
-        self, user_id: str, query: str, *, limit: int = 200
-    ) -> List[TaskSummary]:
-        return self._run(
-            self._async_client.search_vsa_tasks(user_id, query, limit=limit)
-        )
+    def search_vsa_tasks(self, user_id: str, query: str, *, limit: int = 200) -> list[TaskSummary]:
+        return self._run(self._async_client.search_vsa_tasks(user_id, query, limit=limit))
 
-    def delete_vsa_tasks_bulk(self, task_ids: List[str]) -> SuccessResponse:
+    def delete_vsa_tasks_bulk(self, task_ids: list[str]) -> SuccessResponse:
         return self._run(self._async_client.delete_vsa_tasks_bulk(task_ids))
 
     # -- Self-Managed (Mio) --
 
     def send_mio_message(
-        self, task_id: str, message: str, *, attachment_ids: Optional[List[str]] = None
+        self, task_id: str, message: str, *, attachment_ids: list[str] | None = None
     ) -> SuccessResponse:
         return self._run(
-            self._async_client.send_mio_message(
-                task_id, message, attachment_ids=attachment_ids
-            )
+            self._async_client.send_mio_message(task_id, message, attachment_ids=attachment_ids)
         )
 
     def approve_mio_action(
         self, task_id: str, *, approved: bool = True, feedback: str = ""
     ) -> SuccessResponse:
         return self._run(
-            self._async_client.approve_mio_action(
-                task_id, approved=approved, feedback=feedback
-            )
+            self._async_client.approve_mio_action(task_id, approved=approved, feedback=feedback)
         )
 
     def wake_mio(self, task_id: str) -> SuccessResponse:
@@ -484,8 +438,8 @@ class Orchestrator:
         self,
         task_id: str,
         *,
-        agent_model_id: Optional[str] = None,
-        orchestrator_model_id: Optional[str] = None,
+        agent_model_id: str | None = None,
+        orchestrator_model_id: str | None = None,
     ) -> SuccessResponse:
         return self._run(
             self._async_client.update_task_models(
@@ -499,8 +453,8 @@ class Orchestrator:
         self,
         task_id: str,
         *,
-        iteration: Optional[int] = None,
-        max_iterations: Optional[int] = None,
+        iteration: int | None = None,
+        max_iterations: int | None = None,
     ) -> SuccessResponse:
         return self._run(
             self._async_client.update_task_iteration(
@@ -511,16 +465,14 @@ class Orchestrator:
         )
 
     def update_task_workflow_data(
-        self, task_id: str, workflow_data: Dict[str, Any]
+        self, task_id: str, workflow_data: dict[str, Any]
     ) -> SuccessResponse:
-        return self._run(
-            self._async_client.update_task_workflow_data(task_id, workflow_data)
-        )
+        return self._run(self._async_client.update_task_workflow_data(task_id, workflow_data))
 
     def delete_message(self, task_id: str, message_id: int) -> SuccessResponse:
         return self._run(self._async_client.delete_message(task_id, message_id))
 
-    def delete_messages(self, task_id: str, message_ids: List[int]) -> Dict[str, Any]:
+    def delete_messages(self, task_id: str, message_ids: list[int]) -> dict[str, Any]:
         return self._run(self._async_client.delete_messages(task_id, message_ids))
 
     def update_message(
@@ -528,8 +480,8 @@ class Orchestrator:
         task_id: str,
         message_id: int,
         *,
-        content: Optional[str] = None,
-        reasoning: Optional[str] = None,
+        content: str | None = None,
+        reasoning: str | None = None,
     ) -> SuccessResponse:
         return self._run(
             self._async_client.update_message(
@@ -543,12 +495,8 @@ class Orchestrator:
     def reset_matrix_to_phase(self, task_id: str, phase: int) -> SuccessResponse:
         return self._run(self._async_client.reset_matrix_to_phase(task_id, phase))
 
-    def get_message_translations(
-        self, task_id: str, message_id: int
-    ) -> MessageTranslationsResult:
-        return self._run(
-            self._async_client.get_message_translations(task_id, message_id)
-        )
+    def get_message_translations(self, task_id: str, message_id: int) -> MessageTranslationsResult:
+        return self._run(self._async_client.get_message_translations(task_id, message_id))
 
     # ==================================================================
     # 6. Error Events
@@ -559,19 +507,19 @@ class Orchestrator:
         page: int = 1,
         limit: int = 50,
         *,
-        task_id: Optional[str] = None,
-        severity: Optional[List[str]] = None,
-        source: Optional[List[str]] = None,
-        workflow_id: Optional[str] = None,
-        error_code: Optional[str] = None,
-        exception_type: Optional[str] = None,
-        holder_id: Optional[str] = None,
-        request_id: Optional[str] = None,
-        search: Optional[str] = None,
-        since: Optional[str] = None,
-        until: Optional[str] = None,
+        task_id: str | None = None,
+        severity: list[str] | None = None,
+        source: list[str] | None = None,
+        workflow_id: str | None = None,
+        error_code: str | None = None,
+        exception_type: str | None = None,
+        holder_id: str | None = None,
+        request_id: str | None = None,
+        search: str | None = None,
+        since: str | None = None,
+        until: str | None = None,
         order_direction: str = "desc",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return self._run(
             self._async_client.list_errors(
                 page=page,
@@ -594,14 +542,10 @@ class Orchestrator:
     def get_error_detail(self, error_id: str) -> ErrorEventDetail:
         return self._run(self._async_client.get_error_detail(error_id))
 
-    def get_error_stats(
-        self, *, since: Optional[str] = None, top_n: int = 10
-    ) -> ErrorStatsResult:
+    def get_error_stats(self, *, since: str | None = None, top_n: int = 10) -> ErrorStatsResult:
         return self._run(self._async_client.get_error_stats(since=since, top_n=top_n))
 
-    def count_errors(
-        self, since: str, *, severity: Optional[str] = None
-    ) -> ErrorCountResult:
+    def count_errors(self, since: str, *, severity: str | None = None) -> ErrorCountResult:
         return self._run(self._async_client.count_errors(since, severity=severity))
 
     def purge_errors(self) -> ErrorPurgeResult:
@@ -623,7 +567,7 @@ class Orchestrator:
     def health_leader(self) -> LeaderStatus:
         return self._run(self._async_client.health_leader())
 
-    def get_metrics(self, *, types: Optional[str] = None) -> MetricSnapshot:
+    def get_metrics(self, *, types: str | None = None) -> MetricSnapshot:
         return self._run(self._async_client.get_metrics(types=types))
 
     # ==================================================================
@@ -645,7 +589,7 @@ class Orchestrator:
     def set_orchestrator_model(self, model: str) -> SuccessResponse:
         return self._run(self._async_client.set_orchestrator_model(model))
 
-    def get_llm_backend_status(self) -> Dict[str, Any]:
+    def get_llm_backend_status(self) -> dict[str, Any]:
         return self._run(self._async_client.get_llm_backend_status())
 
     def add_llm_backend(self, host: str, api_key: str) -> SuccessResponse:
@@ -654,7 +598,7 @@ class Orchestrator:
     def remove_llm_backend(self, host: str) -> SuccessResponse:
         return self._run(self._async_client.remove_llm_backend(host))
 
-    def get_mcp_server_status(self) -> Dict[str, Any]:
+    def get_mcp_server_status(self) -> dict[str, Any]:
         return self._run(self._async_client.get_mcp_server_status())
 
     def add_mcp_server(self, host: str, api_key: str) -> SuccessResponse:
@@ -702,19 +646,17 @@ class Orchestrator:
     # ==================================================================
 
     def stream_task_status(
-        self, task_id: str, timeout: Optional[float] = None
-    ) -> List[Dict[str, Any]]:
+        self, task_id: str, timeout: float | None = None
+    ) -> list[dict[str, Any]]:
         """Collect all SSE status events for a task.
 
         The async version is a streaming generator; the sync version
         runs the stream to completion and returns all events as a list.
         """
 
-        async def _collect() -> List[Dict[str, Any]]:
-            events: List[Dict[str, Any]] = []
-            async for event in self._async_client.stream_task_status(
-                task_id, timeout=timeout
-            ):
+        async def _collect() -> list[dict[str, Any]]:
+            events: list[dict[str, Any]] = []
+            async for event in self._async_client.stream_task_status(task_id, timeout=timeout):
                 events.append(event)
             return events
 

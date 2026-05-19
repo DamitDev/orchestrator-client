@@ -151,9 +151,7 @@ class OrchestratorAsync:
             self._http = httpx.AsyncClient(
                 base_url=self._base_url,
                 headers=headers,
-                timeout=httpx.Timeout(
-                    connect=timeout, read=timeout, write=timeout, pool=timeout
-                ),
+                timeout=httpx.Timeout(connect=timeout, read=timeout, write=timeout, pool=timeout),
                 follow_redirects=True,
                 verify=verify_ssl,
             )
@@ -276,9 +274,7 @@ class OrchestratorAsync:
             error = body.get("error", body)
             error_code = error.get("code") if isinstance(error, dict) else None
             error_message = (
-                error.get("message", response.text)
-                if isinstance(error, dict)
-                else response.text
+                error.get("message", response.text) if isinstance(error, dict) else response.text
             )
             error_details = error.get("details") if isinstance(error, dict) else None
         except (ValueError, AttributeError):
@@ -413,9 +409,7 @@ class OrchestratorAsync:
             status=data.get("status", ""),
         )
 
-    async def get_task_status(
-        self, task_id: str, *, locale: str | None = None
-    ) -> TaskDetail:
+    async def get_task_status(self, task_id: str, *, locale: str | None = None) -> TaskDetail:
         """Get full task status by ID."""
         headers = {"X-Locale": locale} if locale else None
         data = await self._request(
@@ -454,23 +448,17 @@ class OrchestratorAsync:
             params["exclude_archived"] = "true"
 
         headers = {"X-Locale": locale} if locale else None
-        data = await self._request(
-            "GET", "/task/conversation", params=params, headers=headers
-        )
+        data = await self._request("GET", "/task/conversation", params=params, headers=headers)
         messages = [_build_message(m) for m in data.get("conversation", [])]
         return ConversationResult(
             task_id=data.get("task_id", task_id),
             conversation=messages,
         )
 
-    async def get_archived_message_content(
-        self, task_id: str, message_id: int
-    ) -> ArchivedContent:
+    async def get_archived_message_content(self, task_id: str, message_id: int) -> ArchivedContent:
         """Get the original content of an archived message."""
         params = {"task_id": task_id, "message_id": message_id}
-        data = await self._request(
-            "GET", "/task/message/archived-content", params=params
-        )
+        data = await self._request("GET", "/task/message/archived-content", params=params)
         return ArchivedContent(
             id=data.get("id", 0),
             content=data.get("content", ""),
@@ -481,9 +469,7 @@ class OrchestratorAsync:
 
     async def get_task_compactions(self, task_id: str) -> list[CompactionEvent]:
         """List compaction events for a task, newest first."""
-        data = await self._request(
-            "GET", "/task/compactions", params={"task_id": task_id}
-        )
+        data = await self._request("GET", "/task/compactions", params={"task_id": task_id})
         return [
             CompactionEvent(
                 id=e.get("id", 0),
@@ -520,16 +506,12 @@ class OrchestratorAsync:
 
     async def cancel_task(self, task_id: str) -> SuccessResponse:
         """Cancel a running task."""
-        data = await self._request(
-            "POST", "/task/cancel", json_body={"task_id": task_id}
-        )
+        data = await self._request("POST", "/task/cancel", json_body={"task_id": task_id})
         return SuccessResponse(message=data.get("message", ""))
 
     async def delete_task(self, task_id: str) -> TaskDeleteResult:
         """Delete a single task (must be in a terminal state)."""
-        data = await self._request(
-            "POST", "/task/delete", json_body={"task_id": task_id}
-        )
+        data = await self._request("POST", "/task/delete", json_body={"task_id": task_id})
         return TaskDeleteResult(
             deleted_tasks=data.get("deleted_tasks", []),
             failed_tasks=data.get("failed_tasks", []),
@@ -616,9 +598,7 @@ class OrchestratorAsync:
             The binary content of the attachment (always returned, even
             when ``outfile`` is set).
         """
-        response = await self._request(
-            "GET", f"/attachment/{attachment_id}", raw_response=True
-        )
+        response = await self._request("GET", f"/attachment/{attachment_id}", raw_response=True)
         content = response.content
         if outfile:
             Path(outfile).write_bytes(content)
@@ -672,9 +652,7 @@ class OrchestratorAsync:
         data = await self._request("POST", "/task/proactive/guide", json_body=body)
         return SuccessResponse(message=data.get("message", ""))
 
-    async def respond_proactive_help(
-        self, task_id: str, response: str
-    ) -> SuccessResponse:
+    async def respond_proactive_help(self, task_id: str, response: str) -> SuccessResponse:
         data = await self._request(
             "POST",
             "/task/proactive/help",
@@ -722,9 +700,7 @@ class OrchestratorAsync:
         return SuccessResponse(message=data.get("message", ""))
 
     async def wake_ticket(self, task_id: str) -> SuccessResponse:
-        data = await self._request(
-            "POST", "/task/ticket/wake", json_body={"task_id": task_id}
-        )
+        data = await self._request("POST", "/task/ticket/wake", json_body={"task_id": task_id})
         return SuccessResponse(message=data.get("message", ""))
 
     # -- Matrix --
@@ -802,9 +778,7 @@ class OrchestratorAsync:
         if options is not None:
             body["options"] = options
         data = await self._request("POST", "/task/vsa/create", json_body=body)
-        return VSATaskCreateResponse(
-            task_id=data.get("task_id", ""), status=data.get("status", "")
-        )
+        return VSATaskCreateResponse(task_id=data.get("task_id", ""), status=data.get("status", ""))
 
     async def send_vsa_message(
         self, task_id: str, message: str, *, attachment_ids: list[str] | None = None
@@ -834,21 +808,15 @@ class OrchestratorAsync:
         return SuccessResponse(message=data.get("message", ""))
 
     async def mark_vsa_failed(self, task_id: str) -> SuccessResponse:
-        data = await self._request(
-            "POST", "/task/vsa/mark_failed", json_body={"task_id": task_id}
-        )
+        data = await self._request("POST", "/task/vsa/mark_failed", json_body={"task_id": task_id})
         return SuccessResponse(message=data.get("message", ""))
 
     async def stop_vsa(self, task_id: str) -> SuccessResponse:
-        data = await self._request(
-            "POST", "/task/vsa/stop", json_body={"task_id": task_id}
-        )
+        data = await self._request("POST", "/task/vsa/stop", json_body={"task_id": task_id})
         return SuccessResponse(message=data.get("message", ""))
 
     async def delete_vsa(self, task_id: str) -> SuccessResponse:
-        data = await self._request(
-            "POST", "/task/vsa/delete", json_body={"task_id": task_id}
-        )
+        data = await self._request("POST", "/task/vsa/delete", json_body={"task_id": task_id})
         return SuccessResponse(message=data.get("message", ""))
 
     async def list_vsa_tasks(
@@ -922,9 +890,7 @@ class OrchestratorAsync:
         return SuccessResponse(message=data.get("message", ""))
 
     async def get_mio_context(self, task_id: str) -> MioContext:
-        data = await self._request(
-            "GET", "/task/self_managed/context", params={"task_id": task_id}
-        )
+        data = await self._request("GET", "/task/self_managed/context", params={"task_id": task_id})
         return MioContext(
             task_id=data.get("task_id", task_id),
             current_tokens=data.get("current_tokens", 0),
@@ -1004,13 +970,9 @@ class OrchestratorAsync:
         data = await self._request("POST", "/debug/task/message/delete", json_body=body)
         return SuccessResponse(message=data.get("message", ""))
 
-    async def delete_messages(
-        self, task_id: str, message_ids: list[int]
-    ) -> dict[str, Any]:
+    async def delete_messages(self, task_id: str, message_ids: list[int]) -> dict[str, Any]:
         body = {"task_id": task_id, "message_ids": message_ids}
-        return await self._request(
-            "POST", "/debug/task/message/delete/multiple", json_body=body
-        )
+        return await self._request("POST", "/debug/task/message/delete/multiple", json_body=body)
 
     async def update_message(
         self,
@@ -1030,9 +992,7 @@ class OrchestratorAsync:
 
     async def reset_matrix_to_phase(self, task_id: str, phase: int) -> SuccessResponse:
         body = {"task_id": task_id, "phase": phase}
-        data = await self._request(
-            "POST", "/debug/task/matrix/reset_to_phase", json_body=body
-        )
+        data = await self._request("POST", "/debug/task/matrix/reset_to_phase", json_body=body)
         return SuccessResponse(message=data.get("message", ""))
 
     async def get_message_translations(
@@ -1151,9 +1111,7 @@ class OrchestratorAsync:
             top_holder_ids=data.get("top_holder_ids", []),
         )
 
-    async def count_errors(
-        self, since: str, *, severity: str | None = None
-    ) -> ErrorCountResult:
+    async def count_errors(self, since: str, *, severity: str | None = None) -> ErrorCountResult:
         params: dict[str, Any] = {"since": since}
         if severity is not None:
             params["severity"] = severity
@@ -1282,9 +1240,7 @@ class OrchestratorAsync:
         )
 
     async def update_settings(self, **settings: Any) -> SystemStatus:
-        data = await self._request(
-            "POST", "/configuration/system/settings", json_body=settings
-        )
+        data = await self._request("POST", "/configuration/system/settings", json_body=settings)
         settings_data = data.get("settings", {}) or {}
         settings_obj = type(
             "SystemStatusSettings",
@@ -1346,9 +1302,7 @@ class OrchestratorAsync:
         )
 
     async def set_agent_model(self, model: str) -> SuccessResponse:
-        data = await self._request(
-            "POST", "/configuration/agent", json_body={"model": model}
-        )
+        data = await self._request("POST", "/configuration/agent", json_body={"model": model})
         return SuccessResponse(message=data.get("message", ""))
 
     async def set_orchestrator_model(self, model: str) -> SuccessResponse:
@@ -1419,9 +1373,7 @@ class OrchestratorAsync:
                 "max_concurrent_tasks_per_replica": cluster_data.get(
                     "max_concurrent_tasks_per_replica", 0
                 ),
-                "currently_running_tasks": cluster_data.get(
-                    "currently_running_tasks", 0
-                ),
+                "currently_running_tasks": cluster_data.get("currently_running_tasks", 0),
                 "running_task_ids": cluster_data.get("running_task_ids", []),
                 "replicas_alive": cluster_data.get("replicas_alive", 0),
                 "queued_tasks": cluster_data.get("queued_tasks", 0),

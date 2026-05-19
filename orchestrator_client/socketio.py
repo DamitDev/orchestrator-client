@@ -86,9 +86,7 @@ class RealtimeClient:
         self._client_id = client_id
         self._locale = locale
         self._sio = socketio.AsyncClient()
-        self._handlers: dict[str, list[Callable[[dict[str, Any]], Awaitable[None]]]] = (
-            {}
-        )
+        self._handlers: dict[str, list[Callable[[dict[str, Any]], Awaitable[None]]]] = {}
         self._connected = False
 
         # Register the raw message handler
@@ -214,9 +212,7 @@ class RealtimeClient:
         """
         await self._sio.emit("ping", {})
 
-    def on(
-        self, event_type: str, handler: Callable[[dict[str, Any]], Awaitable[None]]
-    ) -> None:
+    def on(self, event_type: str, handler: Callable[[dict[str, Any]], Awaitable[None]]) -> None:
         """Register a handler for a specific event type.
 
         The handler receives the decoded event dict (the contents of the
@@ -242,9 +238,7 @@ class RealtimeClient:
         if handler is None:
             del self._handlers[event_type]
         else:
-            self._handlers[event_type] = [
-                h for h in self._handlers[event_type] if h is not handler
-            ]
+            self._handlers[event_type] = [h for h in self._handlers[event_type] if h is not handler]
             if not self._handlers[event_type]:
                 del self._handlers[event_type]
 

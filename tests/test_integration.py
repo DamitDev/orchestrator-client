@@ -14,13 +14,9 @@ Or via marker::
 The tests are automatically skipped if the orchestrator is unreachable.
 """
 
-import os
-from pathlib import Path
-
 import pytest
 
 from orchestrator_client import Orchestrator, OrchestratorAsync, load_config
-from orchestrator_client.exceptions import OrchestratorConnectionError
 
 pytestmark = pytest.mark.integration
 
@@ -28,10 +24,12 @@ pytestmark = pytest.mark.integration
 # Health check: is the orchestrator reachable?
 # ---------------------------------------------------------------------------
 
+
 def orchestrator_reachable() -> bool:
     """Quick probe — try to reach the orchestrator health endpoint."""
     config = load_config()
     import httpx
+
     try:
         resp = httpx.get(
             f"{config.base_url}/health",
@@ -50,6 +48,7 @@ def pytest_configure(config):
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="module")
 def config():
@@ -94,16 +93,19 @@ def sync_client(cfg):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def unique_goal():
     """Return a unique goal prompt so each test run creates distinct tasks."""
     import uuid
+
     return f"Integration test task {uuid.uuid4().hex[:8]}"
 
 
 # ===========================================================================
 # Async Client Integration Tests
 # ===========================================================================
+
 
 class TestAsyncIntegration:
     """Real orchestrator interaction via OrchestratorAsync."""
@@ -236,7 +238,9 @@ class TestAsyncIntegration:
             pass
 
     @pytest.mark.asyncio
-    async def test_create_task_with_disable_summaries_and_translation(self, async_client, unique_goal):
+    async def test_create_task_with_disable_summaries_and_translation(
+        self, async_client, unique_goal
+    ):
         """Create a task with disable_summaries and disable_translation options."""
         created = await async_client.create_task(
             workflow_id="interactive",
@@ -326,6 +330,7 @@ class TestAsyncIntegration:
 # ===========================================================================
 # Sync Client Integration Tests
 # ===========================================================================
+
 
 class TestSyncIntegration:
     """Real orchestrator interaction via Orchestrator (sync wrapper)."""

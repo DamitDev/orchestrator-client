@@ -331,9 +331,7 @@ class TestConfigurationMethods:
                     "translate_model_id": None,
                     "max_concurrent_tasks_per_replica": 5,
                     "subagents_enabled": True,
-                    "localization_targets": [
-                        {"locale": "hu-hu", "language": "Hungarian"}
-                    ],
+                    "localization_targets": [{"locale": "hu-hu", "language": "Hungarian"}],
                 },
                 "version": 7,
             }
@@ -366,9 +364,7 @@ class TestConfigurationMethods:
                     "translate_model_id": None,
                     "max_concurrent_tasks_per_replica": 5,
                     "subagents_enabled": True,
-                    "localization_targets": [
-                        {"locale": "hu-hu", "language": "Hungarian"}
-                    ],
+                    "localization_targets": [{"locale": "hu-hu", "language": "Hungarian"}],
                 },
                 "version": 8,
             }
@@ -477,7 +473,6 @@ class TestClientConstruction:
         """Default verify_ssl should be True (httpx default)."""
         client = OrchestratorAsync(base_url="https://test:8080")
         # httpx client's verify property should reflect the passed value
-        transport = client._http._transport
         # httpx uses verify parameter in its transport — default is True
         assert client._http is not None
 
@@ -508,13 +503,11 @@ class TestClientConstruction:
         )
         assert client._http is custom_client
         # The custom client's settings should be preserved
-        transport = client._http._transport
         await client.close()
 
     @pytest.mark.asyncio
     async def test_insecure_with_verify_ssl_false_makes_request(self):
         """OrchestratorAsync with verify_ssl=False can call a method."""
-        import httpx
 
         # Use respx to mock the call so we don't need a real server
         client = OrchestratorAsync(

@@ -28,6 +28,7 @@ try:
 except ImportError:
     pass
 
+
 @dataclass(frozen=True)
 class OrchestratorConfig:
     """Connection configuration for the Orchestrator API.
