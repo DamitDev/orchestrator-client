@@ -255,9 +255,7 @@ class TestWorkflowMethods:
 
         client._request = fake_request
         token = "eyJhbGciOiJSUzI1NiJ9.test"
-        result = await client.create_vsa_task(
-            "user_123", "AiDIT kérdés", delegated_token=token
-        )
+        result = await client.create_vsa_task("user_123", "AiDIT kérdés", delegated_token=token)
         assert result.task_id == "vsa-task-2"
         assert captured["body"]["delegated_token"] == token
 
