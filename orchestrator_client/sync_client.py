@@ -339,6 +339,7 @@ class Orchestrator:
         title: str | None = None,
         attachment_ids: list[str] | None = None,
         options: dict[str, Any] | None = None,
+        delegated_token: str | None = None,
     ) -> VSATaskCreateResponse:
         return self._run(
             self._async_client.create_vsa_task(
@@ -347,14 +348,25 @@ class Orchestrator:
                 title=title,
                 attachment_ids=attachment_ids,
                 options=options,
+                delegated_token=delegated_token,
             )
         )
 
     def send_vsa_message(
-        self, task_id: str, message: str, *, attachment_ids: list[str] | None = None
+        self,
+        task_id: str,
+        message: str,
+        *,
+        attachment_ids: list[str] | None = None,
+        delegated_token: str | None = None,
     ) -> SuccessResponse:
         return self._run(
-            self._async_client.send_vsa_message(task_id, message, attachment_ids=attachment_ids)
+            self._async_client.send_vsa_message(
+                task_id,
+                message,
+                attachment_ids=attachment_ids,
+                delegated_token=delegated_token,
+            )
         )
 
     def rename_vsa_task(self, task_id: str, title: str) -> SuccessResponse:

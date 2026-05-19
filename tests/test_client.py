@@ -245,6 +245,61 @@ class TestWorkflowMethods:
         assert captured["body"]["title"] == "VPN setup"
 
     @pytest.mark.asyncio
+    async def test_vsa_create_with_delegated_token(self):
+        client = OrchestratorAsync(base_url="http://test:8080")
+        captured = {}
+
+        async def fake_request(method, path, **kwargs):
+            captured["body"] = kwargs.get("json_body", {})
+            return {"task_id": "vsa-task-2", "status": "queued"}
+
+        client._request = fake_request
+        token = "eyJhbGciOiJSUzI1NiJ9.test"
+        result = await client.create_vsa_task("user_123", "AiDIT kérdés", delegated_token=token)
+        assert result.task_id == "vsa-task-2"
+        assert captured["body"]["delegated_token"] == token
+
+    @pytest.mark.asyncio
+    async def test_vsa_create_without_delegated_token_omits_field(self):
+        client = OrchestratorAsync(base_url="http://test:8080")
+        captured = {}
+
+        async def fake_request(method, path, **kwargs):
+            captured["body"] = kwargs.get("json_body", {})
+            return {"task_id": "vsa-task-3", "status": "queued"}
+
+        client._request = fake_request
+        await client.create_vsa_task("user_123", "Kérdés")
+        assert "delegated_token" not in captured["body"]
+
+    @pytest.mark.asyncio
+    async def test_vsa_message_with_delegated_token(self):
+        client = OrchestratorAsync(base_url="http://test:8080")
+        captured = {}
+
+        async def fake_request(method, path, **kwargs):
+            captured["body"] = kwargs.get("json_body", {})
+            return {"message": "Message sent to task task-1"}
+
+        client._request = fake_request
+        token = "eyJhbGciOiJSUzI1NiJ9.fresh"
+        await client.send_vsa_message("task-1", "Hello", delegated_token=token)
+        assert captured["body"]["delegated_token"] == token
+
+    @pytest.mark.asyncio
+    async def test_vsa_message_without_delegated_token_omits_field(self):
+        client = OrchestratorAsync(base_url="http://test:8080")
+        captured = {}
+
+        async def fake_request(method, path, **kwargs):
+            captured["body"] = kwargs.get("json_body", {})
+            return {"message": "Message sent to task task-1"}
+
+        client._request = fake_request
+        await client.send_vsa_message("task-1", "Hello")
+        assert "delegated_token" not in captured["body"]
+
+    @pytest.mark.asyncio
     async def test_mio_interaction(self):
         client = OrchestratorAsync(base_url="http://test:8080")
 
