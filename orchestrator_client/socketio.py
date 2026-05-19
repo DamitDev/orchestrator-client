@@ -71,7 +71,11 @@ class RealtimeClient:
     Args:
         base_url:  Base URL of the orchestrator (e.g. ``http://localhost:8080``).
                    The Socket.IO path ``/socket.io`` is appended automatically.
-        client_id: Optional client identifier sent as query parameter.
+        client_id: Optional client identifier sent as ``client_id`` query
+                   parameter (default ``"orchestrator-client"``).
+        locale:    Optional locale tag (e.g. ``"hu-hu"``, ``"en-us"``) sent as
+                   the ``locale`` query parameter so the server auto-joins the
+                   client into the matching ``locale:<tag>`` room.
 
     The server wraps all events in the ``message`` Socket.IO event with a
     payload ``{"type": "message", "event": {...}}``. This client

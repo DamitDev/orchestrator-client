@@ -97,6 +97,8 @@ class Orchestrator:
         verify_ssl:   Whether to verify SSL certificates. Set to ``False`` for
                       self-signed certificates (default ``True``).
         http_client:  Optional pre-configured ``httpx.AsyncClient``.
+        locale:       Optional locale tag (e.g. ``"hu-hu"``, ``"en-us"``) sent as
+                      ``X-Locale`` on every request for translated API responses.
     """
 
     def __init__(
@@ -107,6 +109,7 @@ class Orchestrator:
         max_retries: int = 3,
         verify_ssl: bool = True,
         http_client: Any = None,
+        locale: str | None = None,
     ):
         self._loop = asyncio.new_event_loop()
         self._async_client = _OrchestratorAsync(
@@ -116,6 +119,7 @@ class Orchestrator:
             max_retries=max_retries,
             verify_ssl=verify_ssl,
             http_client=http_client,
+            locale=locale,
         )
         self._loop.run_until_complete(self._async_client.__aenter__())
 

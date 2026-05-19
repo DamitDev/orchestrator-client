@@ -138,6 +138,10 @@ class OrchestratorAsync:
         http_client: Optional pre-configured ``httpx.AsyncClient``. When provided,
                      ``base_url``, ``api_key``, ``timeout``, and ``verify_ssl``
                      are ignored in favour of the client's own configuration.
+        locale:    Optional locale tag (e.g. ``"hu-hu"``, ``"en-us"``) sent as
+                   ``X-Locale`` on every request so the API returns translated
+                   content.  When not set the API returns its default (English)
+                   content.
     """
 
     def __init__(
@@ -148,6 +152,7 @@ class OrchestratorAsync:
         max_retries: int = 3,
         verify_ssl: bool = True,
         http_client: httpx.AsyncClient | None = None,
+        locale: str | None = None,
     ):
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
@@ -156,9 +161,11 @@ class OrchestratorAsync:
         if http_client is not None:
             self._http = http_client
         else:
-            headers = {}
+            headers: dict[str, str] = {}
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
+            if locale:
+                headers["X-Locale"] = locale
 
             self._http = httpx.AsyncClient(
                 base_url=self._base_url,
