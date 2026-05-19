@@ -165,6 +165,7 @@ class Orchestrator:
         orchestrator_model_id: Optional[str] = None,
         available_tools: Optional[List[str]] = None,
         attachment_ids: Optional[List[str]] = None,
+        options: Optional[Dict[str, Any]] = None,
     ) -> TaskCreateResponse:
         return self._run(
             self._async_client.create_task(
@@ -183,6 +184,7 @@ class Orchestrator:
                 orchestrator_model_id=orchestrator_model_id,
                 available_tools=available_tools,
                 attachment_ids=attachment_ids,
+                options=options,
             )
         )
 
@@ -363,6 +365,7 @@ class Orchestrator:
         *,
         title: Optional[str] = None,
         attachment_ids: Optional[List[str]] = None,
+        options: Optional[Dict[str, Any]] = None,
     ) -> VSATaskCreateResponse:
         return self._run(
             self._async_client.create_vsa_task(
@@ -370,6 +373,7 @@ class Orchestrator:
                 goal_prompt,
                 title=title,
                 attachment_ids=attachment_ids,
+                options=options,
             )
         )
 

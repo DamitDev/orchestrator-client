@@ -338,6 +338,7 @@ class OrchestratorAsync:
         orchestrator_model_id: str | None = None,
         available_tools: list[str] | None = None,
         attachment_ids: list[str] | None = None,
+        options: dict[str, Any] | None = None,
     ) -> TaskCreateResponse:
         """Create a new task.
 
@@ -359,6 +360,10 @@ class OrchestratorAsync:
             orchestrator_model_id: Override orchestrator model.
             available_tools:      Allowed tools (``None`` = all, ``[]`` = none).
             attachment_ids:       Previously uploaded attachment IDs (max 5).
+            options:              Per-task feature toggles, e.g.
+                                  ``{"disable_summaries": True}``.  ``None``
+                                  keeps all features enabled.  Unknown keys
+                                  are rejected by the server with 422.
         """
         body: dict[str, Any] = {
             "workflow_id": workflow_id,
@@ -388,6 +393,8 @@ class OrchestratorAsync:
             body["available_tools"] = available_tools
         if attachment_ids is not None:
             body["attachment_ids"] = attachment_ids
+        if options is not None:
+            body["options"] = options
 
         data = await self._request("POST", "/task/create", json_body=body)
         return TaskCreateResponse(
@@ -410,6 +417,7 @@ class OrchestratorAsync:
             **_build_task_summary(data).__dict__,
             subtask_ids=data.get("subtask_ids", []),
             workflow_data=data.get("workflow_data"),
+            options=data.get("options"),
         )
 
     async def get_task_conversation(
@@ -763,12 +771,25 @@ class OrchestratorAsync:
         *,
         title: str | None = None,
         attachment_ids: list[str] | None = None,
+        options: dict[str, Any] | None = None,
     ) -> VSATaskCreateResponse:
+        """Create a new VSA task.
+
+        Args:
+            user_id:        User identifier.
+            goal_prompt:    Initial message or goal.
+            title:          Optional title; AI-generated if omitted.
+            attachment_ids: Previously uploaded attachment IDs (max 5).
+            options:        Per-task feature toggles (same keys as
+                            ``create_task``).  ``None`` keeps all features on.
+        """
         body: dict[str, Any] = {"user_id": user_id, "goal_prompt": goal_prompt}
         if title is not None:
             body["title"] = title
         if attachment_ids is not None:
             body["attachment_ids"] = attachment_ids
+        if options is not None:
+            body["options"] = options
         data = await self._request("POST", "/task/vsa/create", json_body=body)
         return VSATaskCreateResponse(
             task_id=data.get("task_id", ""), status=data.get("status", "")

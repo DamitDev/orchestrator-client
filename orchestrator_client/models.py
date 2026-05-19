@@ -49,11 +49,25 @@ class TaskSummary:
 
 
 @dataclass
+class TaskOptions:
+    """Per-task feature toggles set at creation time.
+
+    All flags default to ``False`` (feature enabled).  ``None`` for
+    the ``options`` field on :class:`TaskDetail` means the task was
+    created before the feature was introduced (all features active).
+    """
+
+    disable_summaries: bool = False
+    disable_translation: bool = False
+
+
+@dataclass
 class TaskDetail(TaskSummary):
     """Full task status including fields returned by ``GET /task/status``."""
 
     subtask_ids: list[str] = field(default_factory=list)
     workflow_data: dict[str, Any] | None = None
+    options: dict[str, Any] | None = None
 
 
 @dataclass

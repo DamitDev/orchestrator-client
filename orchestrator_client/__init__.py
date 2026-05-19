@@ -76,6 +76,7 @@ from orchestrator_client.models import (
     TaskHandlerStatusLocal,
     TaskJournal,
     TaskListResult,
+    TaskOptions,
     # Core task models
     TaskSummary,
     TokenWorkerStatus,
@@ -109,6 +110,7 @@ __all__ = [
     "TaskSummary",
     "TaskDetail",
     "TaskListResult",
+    "TaskOptions",
     "TaskCreateResponse",
     "TaskCancelResponse",
     "TaskDeleteResult",
