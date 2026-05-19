@@ -86,6 +86,10 @@ class TaskCreateResponse:
 class TaskCancelResponse:
     task_id: str
     killed: bool
+    via: str
+    message: str
+    holder_id: str | None = None
+    reason: str | None = None
 
 
 @dataclass
@@ -428,10 +432,14 @@ class ConfigurationStatus:
     orchestrator_model: str | None
     summary_model: str | None
     translate_model: str | None
+    llm_backends_count: int
+    mcp_servers_count: int
+    total_tasks: int
+    queued_tasks: int
+    active_tasks: int
+    pending_approval_tasks: int
+    subagents_enabled: bool
     localization_targets: list[dict[str, str]]
-    llmbackends: list[LLMBackendInfo]
-    mcpservers: list[MCPServerInfo]
-    builtin_tools: list[str]
 
 
 # ---------------------------------------------------------------------------
@@ -515,14 +523,15 @@ class AuthConfig:
 @dataclass
 class WebSocketClientInfo:
     client_id: str
-    subscription: dict[str, Any]
-    connected: bool
+    connected_at: str
 
 
 @dataclass
 class WebSocketStatus:
     connected_clients: int
     clients: list[WebSocketClientInfo]
+    event_listener_healthy: bool
+    last_event_time: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -538,11 +547,14 @@ class SuccessResponse:
 @dataclass
 class MioContext:
     task_id: str
+    model_id: str
     current_tokens: int
     context_limit: int
     usage_percentage: float
-    archived_count: int
-    active_count: int
+    total_messages: int
+    active_messages: int
+    archived_messages: int
+    messages_without_token_count: int
 
 
 @dataclass
@@ -568,3 +580,95 @@ class WorkflowStates:
     waiting_states: dict[str, list[str]]
     stopped_states: dict[str, list[str]]
     intermediate_states: dict[str, list[str]]
+
+
+# ---------------------------------------------------------------------------
+# New models
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class SubagentsStatus:
+    subagents_enabled: bool
+
+
+@dataclass
+class MioMemoryItem:
+    id: str
+    title: str
+    content: str
+    tags: list[str]
+    created_at: str
+    updated_at: str
+    task_id: str | None = None
+    linked_task_id: str | None = None
+
+
+@dataclass
+class MioMemoriesResult:
+    memories: list[MioMemoryItem]
+    total: int
+
+
+@dataclass
+class ToolCatalogEntry:
+    name: str
+    description: str
+    provenance_kind: str
+    category: str
+    tags: list[str]
+    dangerous: bool
+    has_fragment: bool
+    provenance_server: str | None = None
+    workflow_ids: list[str] | None = None
+
+
+@dataclass
+class ToolCatalogResult:
+    tools: list[ToolCatalogEntry]
+    total_tools: int
+    providers: list[str]
+
+
+@dataclass
+class MCPRefreshResult:
+    results: dict[str, Any]
+    total_refreshed: int
+
+
+@dataclass
+class CatalogValidationIssue:
+    tool_name: str
+    issue_type: str
+    detail: str
+
+
+@dataclass
+class CatalogValidationResult:
+    issues: list[CatalogValidationIssue]
+    total_issues: int
+
+
+@dataclass
+class ReloadServicesResult:
+    timestamp: str
+    llm_backends: dict[str, Any]
+    mcp_servers: dict[str, Any]
+    slot_manager: dict[str, Any]
+    next_scheduled_reload: str | None = None
+
+
+@dataclass
+class ReloadStatus:
+    enabled: bool
+    interval_hours: float | None
+    last_reload: str | None = None
+    next_scheduled_reload: str | None = None
+
+
+@dataclass
+class MessageDeleteMultipleResult:
+    deleted_ids: list[int]
+    failed_ids: list[int]
+    total_deleted: int
+    total_failed: int

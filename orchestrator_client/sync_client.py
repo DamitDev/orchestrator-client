@@ -38,6 +38,7 @@ from orchestrator_client.models import (
     ArchivedContent,
     AttachmentUploadResponse,
     AuthConfig,
+    CatalogValidationResult,
     CompactionEvent,
     ConfigurationStatus,
     ConversationResult,
@@ -49,11 +50,17 @@ from orchestrator_client.models import (
     HealthStatus,
     LeaderStatus,
     MatrixConversationResult,
+    MCPRefreshResult,
+    MessageDeleteMultipleResult,
     MessageTranslationsResult,
     MetricSnapshot,
     MioContext,
+    MioMemoriesResult,
     ReadinessResult,
+    ReloadServicesResult,
+    ReloadStatus,
     SlotsStatus,
+    SubagentsStatus,
     SuccessResponse,
     SummaryWorkerStatus,
     SystemStatus,
@@ -66,6 +73,7 @@ from orchestrator_client.models import (
     TaskListResult,
     TaskSummary,
     TokenWorkerStatus,
+    ToolCatalogResult,
     ToolsListResult,
     VSATaskCreateResponse,
     WebSocketStatus,
@@ -231,6 +239,9 @@ class Orchestrator:
     def delete_tasks(self, task_ids: list[str]) -> TaskDeleteResult:
         return self._run(self._async_client.delete_tasks(task_ids))
 
+    def set_task_status(self, task_id: str, status: str) -> SuccessResponse:
+        return self._run(self._async_client.set_task_status(task_id, status))
+
     # ==================================================================
     # 2. Attachments
     # ==================================================================
@@ -268,6 +279,9 @@ class Orchestrator:
 
     def approve_interactive_action(self, task_id: str, *, approved: bool = True) -> SuccessResponse:
         return self._run(self._async_client.approve_interactive_action(task_id, approved=approved))
+
+    def stop_interactive(self, task_id: str) -> SuccessResponse:
+        return self._run(self._async_client.stop_interactive(task_id))
 
     # -- Proactive --
 
@@ -432,12 +446,24 @@ class Orchestrator:
     def get_mio_context(self, task_id: str) -> MioContext:
         return self._run(self._async_client.get_mio_context(task_id))
 
+    def get_mio_memories(self, task_id: str, *, include_common: bool = False) -> MioMemoriesResult:
+        return self._run(self._async_client.get_mio_memories(task_id, include_common=include_common))
+
     # ==================================================================
     # 4. Tools
     # ==================================================================
 
     def list_tools(self) -> ToolsListResult:
         return self._run(self._async_client.list_tools())
+
+    def get_tool_catalog(self) -> ToolCatalogResult:
+        return self._run(self._async_client.get_tool_catalog())
+
+    def refresh_mcp_tools(self) -> MCPRefreshResult:
+        return self._run(self._async_client.refresh_mcp_tools())
+
+    def validate_tool_catalog(self) -> CatalogValidationResult:
+        return self._run(self._async_client.validate_tool_catalog())
 
     # ==================================================================
     # 5. Debug Endpoints
@@ -484,7 +510,7 @@ class Orchestrator:
     def delete_message(self, task_id: str, message_id: int) -> SuccessResponse:
         return self._run(self._async_client.delete_message(task_id, message_id))
 
-    def delete_messages(self, task_id: str, message_ids: list[int]) -> dict[str, Any]:
+    def delete_messages(self, task_id: str, message_ids: list[int]) -> MessageDeleteMultipleResult:
         return self._run(self._async_client.delete_messages(task_id, message_ids))
 
     def update_message(
@@ -642,6 +668,18 @@ class Orchestrator:
 
     def get_slots_status(self) -> SlotsStatus:
         return self._run(self._async_client.get_slots_status())
+
+    def get_subagents_status(self) -> SubagentsStatus:
+        return self._run(self._async_client.get_subagents_status())
+
+    def set_subagents_enabled(self, enabled: bool) -> SuccessResponse:
+        return self._run(self._async_client.set_subagents_enabled(enabled))
+
+    def reload_services(self) -> ReloadServicesResult:
+        return self._run(self._async_client.reload_services())
+
+    def get_reload_status(self) -> ReloadStatus:
+        return self._run(self._async_client.get_reload_status())
 
     # ==================================================================
     # 9. Auth / WebSocket status
