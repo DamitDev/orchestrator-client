@@ -662,9 +662,7 @@ class OrchestratorAsync:
 
     async def stop_interactive(self, task_id: str) -> SuccessResponse:
         """Stop an interactive workflow task."""
-        data = await self._request(
-            "POST", "/task/interactive/stop", json_body={"task_id": task_id}
-        )
+        data = await self._request("POST", "/task/interactive/stop", json_body={"task_id": task_id})
         return SuccessResponse(message=data.get("message", ""))
 
     # -- Proactive --

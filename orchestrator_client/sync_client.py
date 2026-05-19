@@ -447,7 +447,9 @@ class Orchestrator:
         return self._run(self._async_client.get_mio_context(task_id))
 
     def get_mio_memories(self, task_id: str, *, include_common: bool = False) -> MioMemoriesResult:
-        return self._run(self._async_client.get_mio_memories(task_id, include_common=include_common))
+        return self._run(
+            self._async_client.get_mio_memories(task_id, include_common=include_common)
+        )
 
     # ==================================================================
     # 4. Tools
