@@ -121,6 +121,11 @@ class OrchestratorAsync:
         api_key:   Optional bearer token sent as ``Authorization: Bearer <key>``.
         timeout:   Default per-request timeout in seconds.
         max_retries: Max retry attempts on transient failures (default 3).
+        verify_ssl: Whether to verify SSL certificates. Set to ``False`` for
+                    self-signed certificates (default ``True``).
+        http_client: Optional pre-configured ``httpx.AsyncClient``. When provided,
+                     ``base_url``, ``api_key``, ``timeout``, and ``verify_ssl``
+                     are ignored in favour of the client's own configuration.
     """
 
     def __init__(
@@ -129,23 +134,29 @@ class OrchestratorAsync:
         api_key: str | None = None,
         timeout: float = _DEFAULT_TIMEOUT,
         max_retries: int = 3,
+        verify_ssl: bool = True,
+        http_client: httpx.AsyncClient | None = None,
     ):
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
         self._max_retries = max_retries
 
-        headers = {}
-        if api_key:
-            headers["Authorization"] = f"Bearer {api_key}"
+        if http_client is not None:
+            self._http = http_client
+        else:
+            headers = {}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
 
-        self._http = httpx.AsyncClient(
-            base_url=self._base_url,
-            headers=headers,
-            timeout=httpx.Timeout(
-                connect=timeout, read=timeout, write=timeout, pool=timeout
-            ),
-            follow_redirects=True,
-        )
+            self._http = httpx.AsyncClient(
+                base_url=self._base_url,
+                headers=headers,
+                timeout=httpx.Timeout(
+                    connect=timeout, read=timeout, write=timeout, pool=timeout
+                ),
+                follow_redirects=True,
+                verify=verify_ssl,
+            )
 
     async def close(self) -> None:
         """Close the underlying HTTP session."""

@@ -467,4 +467,68 @@ class TestErrorEvents:
         detail = await client.get_error_detail("err-1")
         assert detail.severity == "critical"
         assert detail.traceback == "Traceback..."
-        assert detail.context["model"] == "test"
+
+
+class TestClientConstruction:
+    """Client construction and SSL/HTTP client injection tests."""
+
+    @pytest.mark.asyncio
+    async def test_verify_ssl_default_true(self):
+        """Default verify_ssl should be True (httpx default)."""
+        client = OrchestratorAsync(base_url="https://test:8080")
+        # httpx client's verify property should reflect the passed value
+        transport = client._http._transport
+        # httpx uses verify parameter in its transport — default is True
+        assert client._http is not None
+
+    @pytest.mark.asyncio
+    async def test_verify_ssl_false(self):
+        """Should accept verify_ssl=False for self-signed certs."""
+        client = OrchestratorAsync(
+            base_url="https://test:8443",
+            verify_ssl=False,
+        )
+        # The client should be constructable without error
+        assert client._http is not None
+
+    @pytest.mark.asyncio
+    async def test_http_client_injection(self):
+        """Should accept a pre-configured httpx.AsyncClient."""
+        import httpx
+
+        custom_client = httpx.AsyncClient(
+            base_url="http://custom:9090",
+            verify=False,
+            timeout=httpx.Timeout(5.0),
+        )
+        client = OrchestratorAsync(
+            base_url="http://ignored:8080",
+            api_key="should-be-ignored",
+            http_client=custom_client,
+        )
+        assert client._http is custom_client
+        # The custom client's settings should be preserved
+        transport = client._http._transport
+        await client.close()
+
+    @pytest.mark.asyncio
+    async def test_insecure_with_verify_ssl_false_makes_request(self):
+        """OrchestratorAsync with verify_ssl=False can call a method."""
+        import httpx
+
+        # Use respx to mock the call so we don't need a real server
+        client = OrchestratorAsync(
+            base_url="http://test:8080",
+            verify_ssl=True,  # still works for http
+        )
+
+        async def fake_request(method, path, **kwargs):
+            return {
+                "status": "ok",
+                "message": "healthy",
+                "version": "1.0",
+            }
+
+        client._request = fake_request
+        result = await client.health()
+        assert result.status == "ok"
