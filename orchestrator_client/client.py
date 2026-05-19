@@ -759,16 +759,22 @@ class OrchestratorAsync:
         title: str | None = None,
         attachment_ids: list[str] | None = None,
         options: dict[str, Any] | None = None,
+        delegated_token: str | None = None,
     ) -> VSATaskCreateResponse:
         """Create a new VSA task.
 
         Args:
-            user_id:        User identifier.
-            goal_prompt:    Initial message or goal.
-            title:          Optional title; AI-generated if omitted.
-            attachment_ids: Previously uploaded attachment IDs (max 5).
-            options:        Per-task feature toggles (same keys as
-                            ``create_task``).  ``None`` keeps all features on.
+            user_id:          User identifier.
+            goal_prompt:      Initial message or goal.
+            title:            Optional title; AI-generated if omitted.
+            attachment_ids:   Previously uploaded attachment IDs (max 5).
+            options:          Per-task feature toggles (same keys as
+                              ``create_task``).  ``None`` keeps all features on.
+            delegated_token:  Short-lived AiDIT delegated token obtained via
+                              RFC 8693 token exchange (typically injected by the
+                              iris LoopBack proxy).  Stored encrypted; the
+                              orchestrator transparently appends it as ``token``
+                              to mcp-aidit tool-call arguments.
         """
         body: dict[str, Any] = {"user_id": user_id, "goal_prompt": goal_prompt}
         if title is not None:
@@ -777,15 +783,34 @@ class OrchestratorAsync:
             body["attachment_ids"] = attachment_ids
         if options is not None:
             body["options"] = options
+        if delegated_token is not None:
+            body["delegated_token"] = delegated_token
         data = await self._request("POST", "/task/vsa/create", json_body=body)
         return VSATaskCreateResponse(task_id=data.get("task_id", ""), status=data.get("status", ""))
 
     async def send_vsa_message(
-        self, task_id: str, message: str, *, attachment_ids: list[str] | None = None
+        self,
+        task_id: str,
+        message: str,
+        *,
+        attachment_ids: list[str] | None = None,
+        delegated_token: str | None = None,
     ) -> SuccessResponse:
+        """Send a message to an existing VSA task (or reopen a completed one).
+
+        Args:
+            task_id:          ID of the VSA task.
+            message:          Message content to send.
+            attachment_ids:   Previously uploaded attachment IDs (max 5).
+            delegated_token:  Short-lived AiDIT delegated token.  When provided,
+                              overwrites the token stored for the task.  Omitting
+                              the argument leaves the existing token unchanged.
+        """
         body: dict[str, Any] = {"task_id": task_id, "message": message}
         if attachment_ids is not None:
             body["attachment_ids"] = attachment_ids
+        if delegated_token is not None:
+            body["delegated_token"] = delegated_token
         data = await self._request("POST", "/task/vsa/message", json_body=body)
         return SuccessResponse(message=data.get("message", ""))
 
