@@ -236,6 +236,33 @@ class TestAsyncIntegration:
             pass
 
     @pytest.mark.asyncio
+    async def test_create_task_with_disable_summaries_and_translation(self, async_client, unique_goal):
+        """Create a task with disable_summaries and disable_translation options."""
+        created = await async_client.create_task(
+            workflow_id="interactive",
+            goal_prompt=unique_goal,
+            max_iterations=3,
+            options={"disable_summaries": True, "disable_translation": True},
+        )
+        assert created.task_id
+        task_id = created.task_id
+
+        try:
+            status = await async_client.get_task_status(task_id)
+            assert status.id == task_id
+            # options must be echoed back in the status response
+            assert status.options is not None
+            assert status.options.get("disable_summaries") is True
+            assert status.options.get("disable_translation") is True
+        finally:
+            try:
+                if status.status not in ("completed", "failed", "cancelled"):
+                    await async_client.cancel_task(task_id)
+                await async_client.delete_task(task_id)
+            except Exception:
+                pass
+
+    @pytest.mark.asyncio
     async def test_configuration_status(self, async_client):
         """GET /configuration/status returns full config snapshot."""
         result = await async_client.get_configuration_status()
@@ -341,6 +368,32 @@ class TestSyncIntegration:
             assert cancel_result.message
 
         finally:
+            try:
+                sync_client.delete_task(task_id)
+            except Exception:
+                pass
+
+    def test_create_task_with_options(self, sync_client, unique_goal):
+        """Sync: create a task with disable_summaries=True option."""
+        created = sync_client.create_task(
+            workflow_id="interactive",
+            goal_prompt=unique_goal,
+            max_iterations=3,
+            options={"disable_summaries": True},
+        )
+        assert created.task_id
+        task_id = created.task_id
+
+        try:
+            status = sync_client.get_task_status(task_id)
+            assert status.id == task_id
+            assert status.options is not None
+            assert status.options.get("disable_summaries") is True
+        finally:
+            try:
+                sync_client.cancel_task(task_id)
+            except Exception:
+                pass
             try:
                 sync_client.delete_task(task_id)
             except Exception:
